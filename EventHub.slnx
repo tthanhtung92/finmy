@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Bootstrap/">
+    <Project Path="src/Bootstrap/EventHub.Api/EventHub.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/EventHub.Identity.Api/EventHub.Identity.Api.csproj" />
+    <Project Path="src/Modules/Identity/EventHub.Identity.Application/EventHub.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/EventHub.Identity.Domain/EventHub.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/EventHub.Identity.Infrastructure/EventHub.Identity.Infrastructure.csproj" />
+  </Folder>
+</Solution>
