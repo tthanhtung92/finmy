@@ -1,4 +1,4 @@
-# Bước 1 — Central Package Management (`Directory.Packages.props`)
+# Bước 2 — Central Package Management (`Directory.Packages.props`)
 
 > Mục tiêu: gom **toàn bộ version NuGet** của mọi project về **một file duy nhất** ở gốc repo.
 >
@@ -6,9 +6,9 @@
 
 ---
 
-## 1.1. Vấn đề CPM giải quyết (vì sao làm bước này)
+## 2.1. Vấn đề CPM giải quyết (vì sao làm bước này)
 
-Mặc định, mỗi file `.csproj` tự khai version của từng package nó dùng. Với một module 4 project × 3 module + shared + tests, bạn sẽ có chục project. Hậu quả khi version nằm rải rác:
+Mặc định, mỗi file `.csproj` tự khai version của từng package nó dùng. Với 4 project × 3 module + shared + tests, bạn sẽ có chục project. Hậu quả khi version nằm rải rác:
 
 - Project A dùng EF Core `10.0.1`, project B lỡ tay dùng `10.0.3` → lúc chạy sinh lỗi "method not found" rất khó truy.
 - Nâng version một package phải sửa hàng chục file.
@@ -17,19 +17,19 @@ Mặc định, mỗi file `.csproj` tự khai version của từng package nó d
 
 > **Góc kể phỏng vấn:** "Tôi bật Central Package Management ngay từ đầu để mọi project dùng chung một bộ version, tránh lệch version âm thầm khi solution lớn dần."
 
-## 1.2. Tạo file (cách nhanh nhất)
+## 2.2. Tạo file (cách nhanh nhất)
 
-Tại **thư mục gốc repo** (nơi có file `EventHub.slnx`), chạy:
+Tại **thư mục gốc repo** (nơi có `EventHub.slnx`), chạy:
 
 ```bash
 dotnet new packagesprops
 ```
 
-Lệnh này sinh sẵn file `Directory.Packages.props` ở gốc với khung CPM cơ bản (đã bật cờ trung tâm). Nếu máy bạn báo không có template này, không sao — tự tạo file `Directory.Packages.props` ở gốc rồi điền theo mục 1.3.
+Lệnh này sinh sẵn file `Directory.Packages.props` ở gốc với khung CPM cơ bản (đã bật cờ trung tâm). Nếu máy bạn báo không có template này, không sao — tự tạo file `Directory.Packages.props` ở gốc rồi điền theo mục 2.3.
 
 > **Cạm bẫy vị trí:** file **phải ở gốc repo**, ngang hàng `EventHub.slnx`. MSBuild đi ngược cây thư mục từ mỗi project lên trên và dừng ở file đầu tiên gặp; đặt sai chỗ (vd trong `src/`) thì các project ngoài nhánh đó sẽ không "thấy".
 
-## 1.3. Cấu trúc cần có (tự điền)
+## 2.3. Cấu trúc cần có (tự điền)
 
 File `Directory.Packages.props` cần các thành phần sau (mô tả bằng lời — bạn tự gõ XML):
 
@@ -41,7 +41,7 @@ Hôm nay bạn **chưa cần** thêm package thật nào — cứ để `ItemGro
 
 _Tham khảo cấu trúc chính xác (có ví dụ XML đầy đủ):_ [Central Package Management — Microsoft Learn](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management).
 
-## 1.4. Quy ước từ giờ về sau (ghi nhớ)
+## 2.4. Quy ước từ giờ về sau (ghi nhớ)
 
 Kể từ khi CPM bật, mỗi khi cần dùng một package trong một project:
 
@@ -52,7 +52,7 @@ Nếu lỡ để cả `Version` trong `PackageReference` lẫn CPM bật, restor
 
 > _Nâng cao (chỉ cần biết, chưa dùng hôm nay):_ `GlobalPackageReference` để đưa một package vào _mọi_ project (vd công cụ build); `VersionOverride` trên một `PackageReference` để một project dùng version khác biệt. Xem mục tương ứng trong [trang Microsoft Learn](https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management).
 
-## 1.5. Kiểm chứng
+## 2.5. Kiểm chứng
 
 Chạy:
 
@@ -63,10 +63,10 @@ dotnet build EventHub.slnx
 - Phải thấy `Build succeeded`.
 - Vì chưa có package nào, build không khác trước — đúng như mong đợi. Cái ta xác nhận là file mới **không làm hỏng** build.
 
-## 1.6. Xong bước này khi
+## 2.6. Xong bước này khi
 
-- [x] File `Directory.Packages.props` tồn tại ở **gốc repo** (ngang `EventHub.slnx`).
-- [x] Trong đó `ManagePackageVersionsCentrally` = `true`.
-- [x] `dotnet build EventHub.slnx` vẫn xanh.
+- [ ] File `Directory.Packages.props` tồn tại ở **gốc repo** (ngang `EventHub.slnx`).
+- [ ] Trong đó `ManagePackageVersionsCentrally` = `true`.
+- [ ] `dotnet build EventHub.slnx` vẫn xanh.
 
-→ Sang [Bước 2 — Directory.Build.props](02-directory-build-props.md).
+→ Sang [Bước 3 — Directory.Build.props](03-directory-build-props.md).
