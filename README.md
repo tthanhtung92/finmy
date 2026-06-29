@@ -2,8 +2,6 @@
 
 > Nền tảng đặt vé sự kiện xây dựng theo kiến trúc **Modular Monolith** trên **.NET 10**. Mỗi kỹ thuật backend cốt lõi — Authentication, Realtime, Caching, CDN, Messaging, Concurrency — được trình diễn ở mức _minimal nhưng đúng chuẩn production_.
 
-<!-- BADGES: thay <user>/<repo> bằng đường dẫn repo thật của bạn -->
-
 [![CI](https://github.com/tthanhtung9922/eventhub/actions/workflows/ci.yml/badge.svg)](https://github.com/tthanhtung9922/eventhub/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
@@ -121,7 +119,7 @@ Chi tiết và lý do lựa chọn xem trong [docs/architecture.md](docs/archite
 ```bash
 # Clone repo
 git clone https://github.com/tthanhtung9922/eventhub.git
-cd <repo>
+cd eventhub
 
 # Khởi động toàn bộ: API + PostgreSQL + Redis + MinIO
 docker compose -f docker/docker-compose.yml up -d

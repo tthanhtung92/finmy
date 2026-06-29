@@ -34,6 +34,7 @@ Quỹ thời gian: ~1–2h. Nhẹ về tay, nhưng đây là lúc đặt "luật
 | 4 | [04-don-template.md](04-don-template.md) | Dọn rác template (`Class1.cs`, chỉnh endpoint mẫu của host) |
 | 5 | [05-license-readme.md](05-license-readme.md) | LICENSE (MIT) + README khung |
 | 6 | [06-commit-push.md](06-commit-push.md) | Build sạch → commit → push GitHub |
+| 📝 | [notes.md](notes.md) | **Ghi chú & đính chính sau review** — cơ chế nạp `Directory.Build.props`/CPM, vì sao module Api là library |
 
 ## Quy tắc kiểm chứng xuyên suốt
 
