@@ -67,9 +67,9 @@ dotnet ef --version
 
 ## 2.8. Xong bước này khi
 
-- [ ] `Directory.Packages.props` có `PackageVersion` cho provider Npgsql + `*.Design` (+ core nếu cần).
-- [ ] Project Infrastructure tham chiếu các package (không kèm version).
-- [ ] `dotnet ef --version` chạy được.
-- [ ] `dotnet build EventHub.slnx` vẫn xanh.
+- [x] `Directory.Packages.props` có `PackageVersion` cho provider Npgsql + `*.Design` (+ core nếu cần).
+- [x] Project Infrastructure tham chiếu các package (không kèm version).
+- [x] `dotnet ef --version` chạy được.
+- [x] `dotnet build EventHub.slnx` vẫn xanh.
 
 → Sang [Bước 3 — DbContext + migration đầu tiên](03-dbcontext-migration.md).

@@ -20,8 +20,8 @@ Mô tả bằng lời (bạn tự gõ YAML):
 
 1. Tạo thư mục `docker/` ở **gốc repo** (ngang `EventHub.slnx`).
 2. Trong `docker/docker-compose.yml`, khai một khối `services` gồm ba mục con (các tên biến/đường dẫn/healthcheck dưới đây đã đối chiếu tài liệu chính thức — xem Link):
-   - **postgres** — image `postgres:16`; biến môi trường `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`; map port `5432`; gắn named volume vào **`/var/lib/postgresql/data`** (thư mục dữ liệu của Postgres) để **không mất dữ liệu** khi container bị xóa; healthcheck dạng `["CMD-SHELL", "pg_isready -U <user> -d <db>"]` (kèm `interval`, `timeout`, `retries`, `start_period`).
-   - **redis** — image `redis:7`; map port `6379`; (tùy chọn) volume `/data` cho persistence; healthcheck `["CMD", "redis-cli", "ping"]` (phản hồi `PONG` khi khỏe).
+   - **postgres** — image `postgres:17`; biến môi trường `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`; map port `5432`; gắn named volume vào **`/var/lib/postgresql/data`** (thư mục dữ liệu của Postgres) để **không mất dữ liệu** khi container bị xóa; healthcheck dạng `["CMD-SHELL", "pg_isready -U <user> -d <db>"]` (kèm `interval`, `timeout`, `retries`, `start_period`).
+   - **redis** — image `redis:8`; map port `6379`; (tùy chọn) volume `/data` cho persistence; healthcheck `["CMD", "redis-cli", "ping"]` (phản hồi `PONG` khi khỏe).
    - **minio** — image `minio/minio`; chạy lệnh `server /data --console-address ":9001"`; biến môi trường `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`; map **hai** port: `9000` (API S3) và `9001` (console UI); volume vào **`/data`**; healthcheck gọi endpoint **`/minio/health/live`** (vd `["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]`).
 3. Khai khối `volumes` ở cấp trên cùng để đăng ký các named volume đã dùng.
 4. (Khuyến nghị) Đặt **mật khẩu/secret** qua file `.env` cạnh compose thay vì hardcode; thêm `.env` vào `.gitignore` nếu chứa secret thật.
@@ -67,8 +67,8 @@ docker compose -f docker/docker-compose.yml up -d
 
 ## 1.8. Xong bước này khi
 
-- [ ] `docker/docker-compose.yml` tồn tại, khai đủ 3 service + khối `volumes`.
-- [ ] `up -d` → cả 3 service `healthy`.
-- [ ] `down` rồi `up` lại không mất dữ liệu.
+- [x] `docker/docker-compose.yml` tồn tại, khai đủ 3 service + khối `volumes`.
+- [x] `up -d` → cả 3 service `healthy`.
+- [x] `down` rồi `up` lại không mất dữ liệu.
 
 → Sang [Bước 2 — EF Core packages](02-ef-core-packages.md).

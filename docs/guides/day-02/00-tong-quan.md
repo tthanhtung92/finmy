@@ -27,13 +27,13 @@ Một backend thật cần Postgres (database), Redis (cache), MinIO (lưu file)
 
 | Service | Image (tham khảo) | Vai trò trong EventHub | Dùng từ ngày nào |
 |---------|-------------------|------------------------|------------------|
-| **PostgreSQL 16** | `postgres:16` | Database chính — lưu User, Event, Order... | Day 2 trở đi (EF Core) |
-| **Redis 7** | `redis:7` | Cache L2 phân tán cho HybridCache; pub/sub | Tuần 2 (caching) |
+| **PostgreSQL 17** | `postgres:17` | Database chính — lưu User, Event, Order... | Day 2 trở đi (EF Core) |
+| **Redis 8** | `redis:8` | Cache L2 phân tán cho HybridCache; pub/sub | Tuần 2 (caching) |
 | **MinIO** | `minio/minio` | Object storage tương thích S3 — lưu poster sự kiện, giả lập CDN origin cục bộ | Tuần 2 (CDN) |
 
 Hôm nay **chỉ Postgres được dùng thật** (cho migration). Redis và MinIO **dựng sẵn nhưng chưa code tới** — ta đưa vào Compose từ đầu để sau này khỏi quay lại sửa hạ tầng.
 
-Tag image dùng trong [Bước 1](01-docker-compose.md): `postgres:16`, `redis:7`, `minio/minio` (khớp bảng tech stack [ROADMAP mục 2](../../ROADMAP.md)). Bạn có thể chọn biến thể `-alpine` của Postgres/Redis cho image nhẹ hơn — nhớ giữ **đồng nhất** giữa các máy.
+Tag image dùng trong [Bước 1](01-docker-compose.md): `postgres:17`, `redis:8`, `minio/minio` (khớp bảng tech stack [ROADMAP mục 2](../../ROADMAP.md)). Bạn có thể chọn biến thể `-alpine` của Postgres/Redis cho image nhẹ hơn — nhớ giữ **đồng nhất** giữa các máy.
 
 > **Lưu ý license:** MinIO theo **AGPL** — trong project này nó chỉ đóng vai origin S3 *cục bộ cho dev*, không nhúng vào sản phẩm phân phối, nên không vướng. Đây cũng là một điểm "biết license" đáng kể khi phỏng vấn (xem ghi chú thương mại hóa thư viện ở ROADMAP mục 2).
 

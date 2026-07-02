@@ -26,12 +26,12 @@ Ba nguyên tắc xuyên suốt:
 | Web | **ASP.NET Core 10** (Minimal API) | MIT | OpenAPI 3.1 built-in, auth metrics |
 | Ngôn ngữ | **C# 14** | MIT | field keyword, primary constructor |
 | ORM | **EF Core 10** | MIT | optimistic concurrency, named query filters |
-| DB | **PostgreSQL 16** | OSS | Mạnh, miễn phí, phổ biến |
+| DB | **PostgreSQL 17** | OSS | Mạnh, miễn phí, phổ biến |
 | Messaging | **Wolverine** | MIT | Gộp mediator + message bus + outbox native |
 | Mapping | **Mapster** / thủ công | MIT | AutoMapper đã thương mại hóa |
 | Validation | **FluentValidation** | Apache 2.0 | Vẫn miễn phí |
 | Cache | **HybridCache** (L1 in-mem + L2 Redis) | MIT | Tính năng mới ổn định trong .NET 10 |
-| Cache store | **Redis 7** | OSS | Distributed cache + pub/sub |
+| Cache store | **Redis 8** | OSS | Distributed cache + pub/sub |
 | Realtime | **SignalR** | MIT | Built-in, không vướng license |
 | Object Storage | **MinIO** (S3-compatible) | AGPL | Giả lập CDN origin cục bộ |
 | Auth | **ASP.NET Core Identity + JWT** | MIT | Chuẩn, có refresh token, role-based |

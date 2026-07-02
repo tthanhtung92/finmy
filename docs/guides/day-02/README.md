@@ -34,6 +34,7 @@ Quỹ thời gian: ~1–2h. Đây là ngày "đặt đường ray" cho hạ tầ
 | 3 | [03-dbcontext-migration.md](03-dbcontext-migration.md) | DbContext tối thiểu + connection string → migration đầu tiên → áp vào DB |
 | 4 | [04-module-pattern.md](04-module-pattern.md) | Pattern `IModule` + `AddModules()` / `UseModules()` cho host |
 | 5 | [05-verify-commit.md](05-verify-commit.md) | Verify end-to-end → commit → push |
+| 📝 | [notes.md](notes.md) | Ghi chú & đính chính sau review (đọc sau khi làm xong) |
 
 ## Quy tắc kiểm chứng xuyên suốt
 

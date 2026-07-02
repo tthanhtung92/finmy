@@ -76,9 +76,9 @@ Phải thấy bảng **`__EFMigrationsHistory`** (và bảng placeholder nếu d
 
 ## 3.8. Xong bước này khi
 
-- [ ] DbContext tối thiểu của Identity tồn tại trong project Infrastructure.
-- [ ] `dotnet ef migrations add` tạo được migration đầu tiên.
-- [ ] `dotnet ef database update` áp được; bảng `__EFMigrationsHistory` xuất hiện trong Postgres.
-- [ ] Connection string không bị commit kèm secret thật.
+- [x] DbContext tối thiểu của Identity tồn tại trong project Infrastructure.
+- [x] `dotnet ef migrations add` tạo được migration đầu tiên.
+- [x] `dotnet ef database update` áp được; bảng `__EFMigrationsHistory` xuất hiện trong Postgres.
+- [x] Connection string không bị commit kèm secret thật.
 
 → Sang [Bước 4 — Pattern AddModules/UseModules](04-module-pattern.md).

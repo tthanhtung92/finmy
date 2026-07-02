@@ -92,9 +92,9 @@ Chi tiết và lý do lựa chọn xem trong [docs/architecture.md](docs/archite
 | -------------------- | --------------------------------------------------------- |
 | Runtime              | .NET 10 LTS, C# 14                                        |
 | Web                  | ASP.NET Core 10 (Minimal API), OpenAPI 3.1                |
-| ORM / DB             | EF Core 10, PostgreSQL 16                                 |
+| ORM / DB             | EF Core 10, PostgreSQL 17                                 |
 | Messaging            | Wolverine (mediator + message bus + outbox)               |
-| Cache                | HybridCache, Redis 7                                      |
+| Cache                | HybridCache, Redis 8                                      |
 | Realtime             | SignalR                                                   |
 | Object Storage       | MinIO (S3-compatible)                                     |
 | Auth                 | ASP.NET Core Identity + JWT                               |

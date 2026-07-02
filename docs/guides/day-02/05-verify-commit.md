@@ -29,10 +29,10 @@ dotnet run --project src/Bootstrap/EventHub.Api
 
 Checklist khớp [Định nghĩa hoàn thành Day 2](README.md#định-nghĩa-hoàn-thành-day-2):
 
-- [ ] 3 service `healthy`; dữ liệu bền qua `down`/`up`.
-- [ ] Build xanh, không warning.
-- [ ] `__EFMigrationsHistory` có trong Postgres.
-- [ ] Endpoint của module Identity gọi được qua `UseModules()`.
+- [x] 3 service `healthy`; dữ liệu bền qua `down`/`up`.
+- [x] Build xanh, không warning.
+- [x] `__EFMigrationsHistory` có trong Postgres.
+- [x] Endpoint của module Identity gọi được qua `UseModules()`.
 
 ## 5.3. Commit & push
 
@@ -66,8 +66,8 @@ git push
 
 ## 5.6. Xong Day 2 khi
 
-- [ ] Toàn bộ verify 5.2 xanh.
-- [ ] Đã commit (chia scope hợp lý) và push; không lộ secret.
+- [x] Toàn bộ verify 5.2 xanh.
+- [x] Đã commit (chia scope hợp lý) và push; không lộ secret.
 - [ ] Bạn tự kể được 4 điểm trong [Định nghĩa hoàn thành](README.md#định-nghĩa-hoàn-thành-day-2).
 
 Xong rồi nhắn mentor **"review Day 2"** trước khi sang [Day 3](../README.md).
