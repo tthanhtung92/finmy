@@ -23,7 +23,7 @@ Bốn việc nhỏ:
 
 **Vì sao chỉ Infrastructure reference:** cùng logic Day 3, mọi type framework auth (`TokenValidationParameters`, `SymmetricSecurityKey`, `JsonWebTokenHandler`) cô lập ở Infrastructure. Application/Domain sạch package JWT.
 
-**Vì sao gom `JwtOptions`:** issuer/audience/hạn/khóa bị dùng ở **hai chỗ**, lúc *tạo* token (Bước 2) và lúc *validate* token (bước này). Nếu rải chuỗi ma thuật hai nơi, sớm muộn lệch nhau (token phát ra `aud=A` mà validate đòi `aud=B` → mọi request 401 mà không rõ vì sao). Gom một `JwtOptions` bind từ config là **một nguồn sự thật**.
+**Vì sao gom `JwtOptions`:** issuer/audience/hạn/khóa bị dùng ở **hai chỗ**, lúc *tạo* token (Bước 2) và lúc *validate* token (bước này). Nếu rải magic string hai nơi, sớm muộn lệch nhau (token phát ra `aud=A` mà validate đòi `aud=B` → mọi request 401 mà không rõ vì sao). Gom một `JwtOptions` bind từ config là **một source of truth**.
 
 **Vì sao khóa ký ở User Secrets, KHÔNG ở appsettings:** khóa ký HMAC là **bí mật tối cao** của hệ thống, ai có nó **ký được token giả cho bất kỳ user/role nào**, kể cả Admin. Commit khóa vào `appsettings.json` (đi lên Git) = phát khóa cho cả thế giới. Nên khóa nằm ở **User Secrets** (dev, như connection string Day 2) hoặc **biến môi trường** (production). `appsettings.json` chỉ chứa phần **không bí mật**: issuer, audience, hạn.
 
@@ -90,7 +90,7 @@ Xác nhận Application sạch: mở `EventHub.Identity.Application.csproj`, **k
 
 ## 1.8. Góc kể khi phỏng vấn
 
-*"Tôi tách rõ hai nửa của JWT bearer: cấu hình dịch vụ (AddJwtBearer + TokenValidationParameters) nằm trong DI của module Identity, còn middleware UseAuthentication/UseAuthorization nằm ở host vì thứ tự pipeline là quyết định toàn cục. Khóa ký HMAC tôi để ở User Secrets, không bao giờ trong appsettings, vì ai có khóa là ký được token Admin giả. Issuer/audience/hạn tôi gom vào một JwtOptions làm nguồn sự thật duy nhất cho cả lúc phát lẫn lúc validate token, tránh lệch cấu hình gây 401 mù."*
+*"Tôi tách rõ hai nửa của JWT bearer: cấu hình dịch vụ (AddJwtBearer + TokenValidationParameters) nằm trong DI của module Identity, còn middleware UseAuthentication/UseAuthorization nằm ở host vì thứ tự pipeline là quyết định toàn cục. Khóa ký HMAC tôi để ở User Secrets, không bao giờ trong appsettings, vì ai có khóa là ký được token Admin giả. Issuer/audience/hạn tôi gom vào một JwtOptions làm source of truth duy nhất cho cả lúc phát lẫn lúc validate token, tránh lệch cấu hình gây 401 mù."*
 
 ## 1.9. Link tài liệu chính thức
 
