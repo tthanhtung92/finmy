@@ -32,12 +32,12 @@ Host lên được (không exception về `UserManager`/store thiếu đăng ký
 
 Đối chiếu checklist ở [README Day 3](README.md#định-nghĩa-hoàn-thành-day-3). Điểm cốt lõi:
 
-- [ ] Package Identity EF trong CPM, version căn khớp EF Core.
-- [ ] `ApplicationUser`/`ApplicationRole`/`RefreshToken` mô hình hóa xong; quan hệ 1-n rõ.
-- [ ] `IdentityDbContext` kế thừa base Identity; `base.OnModelCreating` gọi trước.
-- [ ] Migration schema Identity áp được; DB thấy 8 bảng.
-- [ ] Build xanh, không warning.
-- [ ] Bạn tự giải thích được 4–5 điểm ở checklist README (không chỉ "làm xong").
+- [x] Package Identity EF trong CPM, version căn khớp EF Core.
+- [x] `ApplicationUser`/`ApplicationRole`/`RefreshToken` mô hình hóa xong; quan hệ 1-n rõ.
+- [x] `IdentityModuleDbContext` kế thừa base Identity; `base.OnModelCreating` gọi trước.
+- [x] Migration schema Identity áp được; DB thấy 8 bảng.
+- [x] Build xanh, không warning.
+- [x] Bạn tự giải thích được 4–5 điểm ở checklist README (không chỉ "làm xong").
 
 ## 5.3. Commit
 
@@ -60,7 +60,7 @@ Nếu bạn thích commit nhỏ, tách theo bước cho lịch sử dễ đọc 
 ```text
 build(identity): thêm package Identity EF + căn version EF Core
 feat(identity): thêm ApplicationUser/Role (Guid) + RefreshToken
-feat(identity): IdentityDbContext kế thừa Identity + AddIdentityCore
+feat(identity): IdentityModuleDbContext kế thừa Identity + AddIdentityCore
 feat(identity): migration schema Identity (InitialCreate, PK uuid)
 ```
 
@@ -72,12 +72,12 @@ git push
 
 ## 5.4. Cạm bẫy thường gặp
 
-- **Commit file migration nhưng quên snapshot:** `IdentityDbContextModelSnapshot.cs` phải commit cùng migration, thiếu nó máy khác diff sai. `git add -A` rồi kiểm `git status` để chắc.
+- **Commit file migration nhưng quên snapshot:** `IdentityModuleDbContextModelSnapshot.cs` phải commit cùng migration, thiếu nó máy khác diff sai. `git add -A` rồi kiểm `git status` để chắc.
 - **Lỡ commit secret:** connection string vẫn ở User Secrets (Day 2). Kiểm tra `appsettings.json` không chứa mật khẩu thật trước khi push.
 
 ## 5.5. Xong Day 3 khi
 
-- [ ] Ba lệnh verify ở 5.1 đều xanh.
+- [x] Ba lệnh verify ở 5.1 đều xanh.
 - [ ] Đã commit (và push nếu muốn) với message Conventional Commits tiếng Việt.
 - [ ] Nhắn mentor **"review Day 3"**.
 

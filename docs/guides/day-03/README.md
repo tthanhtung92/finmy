@@ -10,7 +10,7 @@
 
 Theo [ROADMAP](../../ROADMAP.md) (mục 5, Tuần 1, Ngày 3): *Module Identity: `ApplicationUser`/`Role` (Infrastructure) + `RefreshToken` POCO (Domain) + DbContext → Migration Identity chạy.*
 
-Kết thúc Day 3 bạn có: *module Identity đã **mô hình hóa** `User`, `Role`, `RefreshToken` thật (không còn DbContext rỗng như Day 2); `IdentityDbContext` sinh được **schema Identity đầy đủ** (7 bảng `AspNet*` + bảng `RefreshTokens`); migration mới áp được vào Postgres.*
+Kết thúc Day 3 bạn có: *module Identity đã **mô hình hóa** `User`, `Role`, `RefreshToken` thật (không còn DbContext rỗng như Day 2); `IdentityModuleDbContext` sinh được **schema Identity đầy đủ** (7 bảng `AspNet*` + bảng `RefreshTokens`); migration mới áp được vào Postgres.*
 
 Quỹ thời gian: ~1–2h. Đây là ngày đầu tiên chạm **domain thật**, nên đi chậm mà chắc: mọi thứ auth (Day 4: JWT, refresh token) đứng trên mô hình dữ liệu bạn dựng hôm nay.
 
@@ -31,7 +31,7 @@ Quỹ thời gian: ~1–2h. Đây là ngày đầu tiên chạm **domain thật*
 | A | [00-tong-quan.md](00-tong-quan.md) | **Hiểu** ASP.NET Core Identity vs domain thuần, 7 bảng `AspNet*`, các quyết định lớn (đọc, chưa gõ) |
 | 1 | [01-package.md](01-package.md) | Thêm package `Microsoft.AspNetCore.Identity.EntityFrameworkCore` vào CPM + reference đúng project |
 | 2 | [02-entities.md](02-entities.md) | Mô hình hóa `ApplicationUser`, `ApplicationRole`, `RefreshToken` |
-| 3 | [03-dbcontext.md](03-dbcontext.md) | Đổi `IdentityDbContext` kế thừa base Identity + cấu hình `RefreshToken` + `AddIdentityCore` |
+| 3 | [03-dbcontext.md](03-dbcontext.md) | Đổi context → `IdentityModuleDbContext` kế thừa base Identity + cấu hình `RefreshToken` + `AddIdentityCore` |
 | 4 | [04-migration.md](04-migration.md) | Sinh migration schema Identity thật + áp vào DB + verify bảng |
 | 5 | [05-verify-commit.md](05-verify-commit.md) | Verify end-to-end → commit → push |
 | 📝 | [notes.md](notes.md) | Ghi chú & đính chính sau review (đọc sau khi làm xong) |
@@ -51,7 +51,7 @@ Build phải xanh; migration mới phải liệt kê ra (và áp được vào D
 
 - [ ] Package `Microsoft.AspNetCore.Identity.EntityFrameworkCore` khai trong CPM (không kèm version ở `.csproj`), version căn khớp EF Core.
 - [ ] `ApplicationUser`, `ApplicationRole`, `RefreshToken` đã mô hình hóa; quan hệ 1-n User↔RefreshToken cấu hình rõ.
-- [ ] `IdentityDbContext` kế thừa base Identity (`IdentityDbContext<ApplicationUser, ApplicationRole, …>`); `base.OnModelCreating(builder)` gọi **trước** cấu hình custom.
+- [ ] `IdentityModuleDbContext` kế thừa base Identity (`IdentityDbContext<ApplicationUser, ApplicationRole, …>`); `base.OnModelCreating(builder)` gọi **trước** cấu hình custom.
 - [ ] `dotnet ef migrations add` sinh được migration có schema Identity thật; `dotnet ef database update` áp được.
 - [ ] Trong Postgres thấy đủ **7 bảng `AspNet*`** + bảng **`RefreshTokens`**.
 - [ ] `dotnet build EventHub.slnx` xanh, không warning (kể cả warning downgrade version EF Core).

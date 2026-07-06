@@ -16,14 +16,14 @@
 Điểm mấu chốt mà hệ thống lớn (Clean Architecture template của Jason Taylor, eShopOnWeb) chỉ ra: **Application không cần thấy `ApplicationUser` chút nào.** Chèn một abstraction:
 
 - Interface **`IIdentityService`** ở **Application**: surface toàn primitive (`string`/`bool`/`Result` + `userId`), không lộ type Identity.
-- Impl **`IdentityService`** (giữ `UserManager<ApplicationUser>`) ở **Infrastructure**.
+- Impl **`IdentityService`** (giữ `UserManager<ApplicationUser>`) ở **Infrastructure**, **không phải Application**. Đây là chỗ dễ nói lộn (quiz Day 3 vấp): impl ôm `UserManager`/`ApplicationUser` (cả hai ở Infrastructure), nên nếu để impl trong Application thì Application buộc phải thấy chúng, phải ref Infrastructure, phá đúng cái luật đang cứu. Quy tắc gọn: **abstraction đi lên (Application), implementation đi xuống (Infrastructure)**; DI ở Bootstrap mới ráp hai cái lúc chạy.
 - **`ApplicationUser`/`ApplicationRole`** ở **Infrastructure** (auth = hạ tầng). **`RefreshToken`** ở **Domain** (khái niệm nghiệp vụ), chỉ giữ `UserId: Guid` (id-reference), không navigation ngược `ApplicationUser`.
 
 Kết quả: Domain thuần POCO tuyệt đối (0 package Identity) **và** Application chỉ dùng interface nằm trong chính nó → không reference Infrastructure. Chiều ref: Infra → App → Domain, đúng chuẩn. Handler Day 4 inject `IIdentityService`, không hề biết `UserManager` tồn tại.
 
 **Vì sao không phải trade-off nữa:** compromise (entity ở Domain) *chọn* vi phạm DDD để cứu layering. Lời giải `IIdentityService` **không hy sinh luật nào**, giá phải trả chỉ là một lớp adapter (interface + impl) và surface primitive (mỗi nhu cầu Identity mới → thêm một method). Đúng thứ đáng khoe cho CV kiến trúc.
 
-- **Kiểm chứng:** `EventHub.Identity.Domain.csproj` **và** `EventHub.Identity.Application.csproj` **không** có package Identity/EF nào. `ApplicationUser`/`ApplicationRole`/`IdentityDbContext`/`IdentityService` đều ở Infrastructure. `RefreshToken` (Domain) chỉ có `UserId: Guid`, không navigation `ApplicationUser`.
+- **Kiểm chứng:** `EventHub.Identity.Domain.csproj` **và** `EventHub.Identity.Application.csproj` **không** có package Identity/EF nào. `ApplicationUser`/`ApplicationRole`/`IdentityModuleDbContext`/`IdentityService` đều ở Infrastructure. `RefreshToken` (Domain) chỉ có `UserId: Guid`, không navigation `ApplicationUser`.
 
 **Câu chốt khi phỏng vấn:** *"Tôi coi Identity là hạ tầng: `ApplicationUser`, `UserManager` ở Infrastructure. Application chỉ phụ thuộc abstraction `IIdentityService` mà chính nó định nghĩa (Dependency Inversion), nên Domain thuần POCO tuyệt đối và Application không reference Infrastructure. Đây là pattern Clean Architecture / eShopOnWeb. Domain trỏ user bằng `UserId` (id-reference), không navigation hai chiều. Giá là một lớp adapter, đổi lại lõi tách hoàn toàn khỏi framework auth."*
 
@@ -40,6 +40,8 @@ Kết quả: Domain thuần POCO tuyệt đối (0 package Identity) **và** App
 - **Quên** gọi `base` → EF không hề cấu hình 7 bảng Identity → migration sinh ra thiếu bảng (hoặc chỉ có `RefreshTokens`).
 
 **Câu chốt khi phỏng vấn:** *"EF last-one-wins nên tôi gọi `base.OnModelCreating` trước để nó dựng mapping Identity, rồi tôi cấu hình RefreshToken chồng lên. Đảo thứ tự thì base ghi đè phần của tôi; quên gọi thì migration mất 7 bảng Identity."*
+
+> **Đính chính từ review Day 3:** code hiện đặt `base.OnModelCreating(modelBuilder)` ở **dòng cuối** `OnModelCreating` (sau phần cấu hình `RefreshToken`). Migration lần này vẫn ra đủ 7 bảng vì cấu hình custom **không đụng** entity nào base cấu hình → chưa có va chạm. Nhưng đây là bug ngầm: ngày nào custom chồng lên một bảng Identity (vd đổi maxlength `AspNetUsers.Email`), `base` gọi sau sẽ **xóa** tùy biến đó mà không báo lỗi. Cần **dời `base` lên dòng đầu** hàm.
 
 ---
 

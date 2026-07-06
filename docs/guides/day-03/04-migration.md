@@ -14,7 +14,7 @@ Chạy `dotnet ef migrations` để EF so sánh mô hình mới với snapshot c
 
 Migration = **version hóa schema cùng code** (đã học Day 2): mỗi thay đổi mô hình được dịch thành một file migration có `Up`/`Down`, review qua PR, áp lại được trên mọi môi trường.
 
-Điểm mới hôm nay: migration này **không rỗng**, nó chứa `CreateTable` thật cho 8 bảng. EF tính ra nội dung migration bằng cách **diff** mô hình hiện tại với **snapshot** (`IdentityDbContextModelSnapshot.cs`), file mô tả "trạng thái mô hình lần migration gần nhất". Day 2 snapshot rỗng (DbContext trơn); giờ mô hình có 8 entity → diff ra 8 `CreateTable`.
+Điểm mới hôm nay: migration này **không rỗng**, nó chứa `CreateTable` thật cho 8 bảng. EF tính ra nội dung migration bằng cách **diff** mô hình hiện tại với **snapshot** (`IdentityModuleDbContextModelSnapshot.cs`), file mô tả "trạng thái mô hình lần migration gần nhất". Day 2 snapshot rỗng (DbContext trơn); giờ mô hình có 8 entity → diff ra 8 `CreateTable`.
 
 ## 4.3. Xử lý migration rỗng của Day 2: đi **Hướng B** (vì đã chọn khóa `Guid`)
 
@@ -76,9 +76,9 @@ Cột `Id` phải là kiểu **`uuid`** (không phải `text`/`character varying
 
 ## 4.8. Xong bước này khi
 
-- [ ] Migration `InitialCreate` mới sinh ra **không rỗng** (có `CreateTable` cho các bảng Identity + `RefreshTokens`).
-- [ ] `dotnet ef database update` áp thành công.
-- [ ] `psql \dt` thấy đủ 7 bảng `AspNet*` + `RefreshTokens`.
-- [ ] Cột `Id` của `AspNetUsers` là kiểu `uuid`.
+- [x] Migration `InitialCreate` mới sinh ra **không rỗng** (có `CreateTable` cho các bảng Identity + `RefreshTokens`).
+- [x] `dotnet ef database update` áp thành công.
+- [x] `psql \dt` thấy đủ 7 bảng `AspNet*` + `RefreshTokens`.
+- [x] Cột `Id` của `AspNetUsers` là kiểu `uuid`.
 
 → Sang [Bước 5. Verify & commit](05-verify-commit.md).

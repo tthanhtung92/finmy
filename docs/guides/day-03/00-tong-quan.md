@@ -36,7 +36,7 @@ ASP.NET Core Identity định nghĩa **7 kiểu entity** (đều tiền tố `Id
 
 Quan hệ (theo tài liệu Microsoft): mỗi `User` có nhiều `UserClaim`/`UserLogin`/`UserToken`; mỗi `Role` có nhiều `RoleClaim`; `User`↔`Role` là **n-n** qua bảng join `UserRole`.
 
-Bạn **không** phải tự tạo 7 bảng này, chỉ cần cho `IdentityDbContext` kế thừa lớp base `IdentityDbContext<TUser, TRole, TKey>`, EF sẽ sinh cả 7 bảng khi migration. Chi tiết ở [Bước 3](03-dbcontext.md).
+Bạn **không** phải tự tạo 7 bảng này, chỉ cần cho `IdentityModuleDbContext` kế thừa lớp base `IdentityDbContext<TUser, TRole, TKey>`, EF sẽ sinh cả 7 bảng khi migration. Chi tiết ở [Bước 3](03-dbcontext.md).
 
 > Nguồn: [Identity model customization (Microsoft Learn, aspnetcore-10.0)](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-10.0), mục "The Identity model" liệt kê 7 entity + tên bảng.
 
@@ -95,7 +95,7 @@ Cơ chế: Application **sở hữu** cái abstraction nó cần (`IIdentityServ
 EventHub.Identity.Domain         → RefreshToken (POCO thuần: UserId: Guid), KHÔNG package Identity
 EventHub.Identity.Application    → IIdentityService (interface, surface primitive)  [method: Day 4]
 EventHub.Identity.Infrastructure → ApplicationUser/ApplicationRole (: IdentityUser<Guid>)
-                                   + IdentityDbContext (kế thừa base Identity EF) + cấu hình 1-n
+                                   + IdentityModuleDbContext (kế thừa base Identity EF) + cấu hình 1-n
                                    + IdentityService : IIdentityService (giữ UserManager, Day 4)
                                    ref Microsoft.AspNetCore.Identity.EntityFrameworkCore
 Chiều ref: Infrastructure → Application → Domain   (đúng chuẩn, không đảo)

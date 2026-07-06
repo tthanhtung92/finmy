@@ -87,8 +87,8 @@ Build xanh nghĩa là ba entity hợp lệ về kiểu: `ApplicationUser`/`Appli
 
 ## 2.9. Xong bước này khi
 
-- [ ] `ApplicationUser`/`ApplicationRole` ở **Infrastructure**, kế thừa `IdentityUser<Guid>`/`IdentityRole<Guid>`.
-- [ ] `RefreshToken` ở **Domain**, POCO thuần, chỉ giữ `UserId: Guid` + các field rotation, **không** navigation `ApplicationUser`.
-- [ ] `dotnet build` xanh; `EventHub.Identity.Domain` **không** dính package Identity, biên dịch được mà không cần type Identity.
+- [x] `ApplicationUser`/`ApplicationRole` ở **Infrastructure**, kế thừa `IdentityUser<Guid>`/`IdentityRole<Guid>`.
+- [x] `RefreshToken` ở **Domain**, POCO thuần, chỉ giữ `UserId: Guid` + các field rotation, **không** navigation `ApplicationUser`.
+- [x] `dotnet build` xanh; `EventHub.Identity.Domain` **không** dính package Identity, biên dịch được mà không cần type Identity.
 
 → Sang [Bước 3. Nâng cấp DbContext](03-dbcontext.md).

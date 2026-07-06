@@ -20,7 +20,7 @@ Khai **một** `PackageVersion` trong `Directory.Packages.props`, rồi referenc
 
 **Vì sao chỉ một package, chỉ ở Infrastructure:** đây là hệ quả trực tiếp của [Quyết định 2](00-tong-quan.md). Coupling với framework Identity được **cô lập trong Infrastructure**:
 
-- `ApplicationUser`/`ApplicationRole` (ở **Infrastructure**) kế thừa `IdentityUser<Guid>`/`IdentityRole<Guid>`; `IdentityDbContext` kế thừa lớp base EF; `IdentityService` (Day 4) giữ `UserManager<ApplicationUser>`. Tất cả đều cần **`Microsoft.AspNetCore.Identity.EntityFrameworkCore`**: gói này kéo theo (transitive) `Microsoft.Extensions.Identity.Stores` + `Microsoft.EntityFrameworkCore.Relational`. Một reference là đủ cho cả cụm.
+- `ApplicationUser`/`ApplicationRole` (ở **Infrastructure**) kế thừa `IdentityUser<Guid>`/`IdentityRole<Guid>`; `IdentityModuleDbContext` kế thừa lớp base EF; `IdentityService` (Day 4) giữ `UserManager<ApplicationUser>`. Tất cả đều cần **`Microsoft.AspNetCore.Identity.EntityFrameworkCore`**: gói này kéo theo (transitive) `Microsoft.Extensions.Identity.Stores` + `Microsoft.EntityFrameworkCore.Relational`. Một reference là đủ cho cả cụm.
 - **Domain** không có bất kỳ type Identity nào (`RefreshToken` chỉ giữ `UserId: Guid`) → **không** cần, và **không được** kéo package Identity. Đây là điều làm Domain thuần POCO tuyệt đối.
 - **Application** chỉ định nghĩa/dùng interface `IIdentityService` với surface primitive → cũng không cần package Identity.
 
@@ -70,9 +70,9 @@ Xác nhận Domain **hoàn toàn sạch** Identity: mở `EventHub.Identity.Doma
 
 ## 1.9. Xong bước này khi
 
-- [ ] `Directory.Packages.props` có `PackageVersion` cho `Microsoft.AspNetCore.Identity.EntityFrameworkCore` (`10.0.9`); cụm EF Core căn cùng patch.
-- [ ] **Chỉ** Infrastructure reference package Identity; không kèm version.
-- [ ] `EventHub.Identity.Domain.csproj` **và** `EventHub.Identity.Application.csproj` **không** dính package Identity/EF Core nào.
-- [ ] `dotnet build` xanh, không warning downgrade/lệch version.
+- [x] `Directory.Packages.props` có `PackageVersion` cho `Microsoft.AspNetCore.Identity.EntityFrameworkCore` (`10.0.9`); cụm EF Core căn cùng patch.
+- [x] **Chỉ** Infrastructure reference package Identity; không kèm version.
+- [x] `EventHub.Identity.Domain.csproj` **và** `EventHub.Identity.Application.csproj` **không** dính package Identity/EF Core nào.
+- [x] `dotnet build` xanh, không warning downgrade/lệch version.
 
 → Sang [Bước 2. Mô hình hóa entity](02-entities.md).
