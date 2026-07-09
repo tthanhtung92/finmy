@@ -4,17 +4,13 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <!-- EF Core provider cho PostgreSQL, để DbContext map sang Postgres. -->
-    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
-    <!-- Công cụ design-time của EF Core, cần cho lệnh dotnet ef migrations add / dotnet ef database update. -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9" />
-    <!-- Identity store persist bằng EF Core (bảng AspNetUsers, AspNetRoles...), phục vụ Identity module. -->
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
-    <!-- Abstraction gốc IConfiguration, nền cho các nguồn config khác. -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.9" />
-    <!-- Đọc secrets từ User Secrets (dev, không commit vào repo) — đây là chỗ connection string IdentityDb đang nằm. -->
     <PackageVersion Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.9" />
-    <!-- Đọc config từ biến môi trường (dùng khi chạy container/production, override secrets). -->
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.9" />
   </ItemGroup>
 </Project>
