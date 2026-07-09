@@ -10,7 +10,7 @@
 
 Hai type, hai project:
 
-- **`IJwtTokenGenerator`** (interface) ở **`EventHub.Identity.Application`**: một method, đại ý *"nhận danh tính user ở dạng primitive → trả `string` access token"*. Đầu vào gợi ý: `userId` (`Guid`), `email` (`string`), `roles` (`IEnumerable<string>`). Đầu ra: `string`. **Không** type JWT nào xuất hiện trên chữ ký.
+- **`IJwtTokenGenerator`** (interface) ở **`EventHub.Identity.Application`** (thư mục `Authentication/`, file `IJwtTokenGenerator.cs`): một method *"nhận danh tính user ở dạng primitive → trả `string` access token"*. Chữ ký gõ thẳng được: `string GenerateToken(string userId, string email, IEnumerable<string> roles)`. Lưu ý `userId` để kiểu **`string`** (không `Guid`) cho interface không dính kiểu khóa cụ thể; caller (`AuthService`, Bước 3) truyền `user.Id.ToString()`. **Không** type JWT nào xuất hiện trên chữ ký.
 - **`JwtTokenGenerator`** (class implement) ở **`EventHub.Identity.Infrastructure`**: dựng danh sách claim, tạo `SecurityTokenDescriptor`, ký bằng `SigningCredentials` từ khóa HMAC, xuất chuỗi qua `JsonWebTokenHandler`. Đọc issuer/audience/hạn/khóa từ `JwtOptions` (Bước 1).
 
 Đăng ký DI: trong `AddInfrastructure`, map `IJwtTokenGenerator` → `JwtTokenGenerator` (đời sống **singleton** hoặc **scoped** đều được; xem mục 2.6).
@@ -39,7 +39,7 @@ Hai type, hai project:
 
 ## 2.4. Các bước làm
 
-1. **Interface (Application):** trong `EventHub.Identity.Application` (gợi ý thư mục `Authentication/` hay `Abstractions/`), khai `IJwtTokenGenerator` với một method sinh access token nhận `userId`/`email`/`roles` (primitive), trả `string`.
+1. **Interface (Application):** trong `EventHub.Identity.Application/Authentication/`, khai `IJwtTokenGenerator` với chữ ký `string GenerateToken(string userId, string email, IEnumerable<string> roles)` (primitive, `userId` là `string`).
 2. **Impl (Infrastructure):** trong `EventHub.Identity.Infrastructure`, tạo `JwtTokenGenerator : IJwtTokenGenerator`. Inject `JwtOptions` (qua `IOptions<JwtOptions>` hoặc đọc trực tiếp, xem 2.6). Trong method:
    - Dựng danh sách claim: `sub` = userId, `email` = email, và **một** claim `role` cho **mỗi** phần tử `roles`.
    - Dựng `SigningCredentials` từ `SymmetricSecurityKey` (bytes của `JwtOptions.SigningKey`) + `HmacSha256`.
@@ -79,11 +79,19 @@ Mentor khuyến nghị **scoped** cho Day 4 (đồng nhất với `IdentityServi
 - **Đặt `Expires` bằng giờ local thay vì UTC.** JWT `exp` là UTC. Dùng `DateTime.UtcNow`, tránh lệch múi giờ khiến token "hết hạn" ngay.
 - **Khóa đọc sai/rỗng.** Nếu `JwtOptions.SigningKey` rỗng (quên set User Secrets), `SymmetricSecurityKey` sẽ nổ hoặc token ký bằng khóa rỗng. Verify khóa nạp đúng (Bước 1 mục 1.5).
 
-## 2.8. Góc kể khi phỏng vấn
+## 2.8. Ba bẫy dễ dính nhất
+
+Nếu chỉ nhớ ba thứ:
+
+1. **Role claim lệch `RoleClaimType` → 403 oan** (bẫy số 1 của Day 4): tên role claim lúc tạo phải khớp lúc validate.
+2. **Copy nhầm `JwtSecurityTokenHandler`** (bản cũ) thay vì `JsonWebTokenHandler` (`Microsoft.IdentityModel.JsonWebTokens`).
+3. **`Expires` bằng giờ local** thay vì UTC → token lệch hạn. Dùng `GetUtcNow().UtcDateTime`.
+
+## 2.9. Góc kể khi phỏng vấn
 
 *"Việc tạo token tôi tách thành IJwtTokenGenerator: interface ở Application chỉ nhận primitive (userId, email, roles) trả string, còn impl ở Infrastructure là chỗ duy nhất chạm JsonWebTokenHandler và khóa ký. Nhờ đó AuthService điều phối login mà không hề biết JWT được ký thế nào, đổi sang khóa bất đối xứng hay đổi handler chỉ sửa một class Infrastructure. Tôi dùng JsonWebTokenHandler thay JwtSecurityTokenHandler vì nó là bản mới, nhanh hơn. Claim role tôi đặt khớp với RoleClaimType lúc validate, đó là chỗ dễ gây 403 oan nếu tên claim lệch nhau."*
 
-## 2.9. Link tài liệu chính thức
+## 2.10. Link tài liệu chính thức
 
 - [JsonWebTokenHandler.CreateToken](https://learn.microsoft.com/en-us/dotnet/api/microsoft.identitymodel.jsonwebtokens.jsonwebtokenhandler.createtoken)
 - [SecurityTokenDescriptor](https://learn.microsoft.com/en-us/dotnet/api/microsoft.identitymodel.tokens.securitytokendescriptor)
@@ -91,7 +99,7 @@ Mentor khuyến nghị **scoped** cho Day 4 (đồng nhất với `IdentityServi
 - [JwtRegisteredClaimNames](https://learn.microsoft.com/en-us/dotnet/api/microsoft.identitymodel.jsonwebtokens.jwtregisteredclaimnames)
 - [Mapping claims / RoleClaimType](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/claims?view=aspnetcore-10.0)
 
-## 2.10. Xong bước này khi
+## 2.11. Xong bước này khi
 
 - [x] `IJwtTokenGenerator` ở Application, surface toàn primitive; Application vẫn 0 package JWT.
 - [x] `JwtTokenGenerator` ở Infrastructure dùng `JsonWebTokenHandler` + `SecurityTokenDescriptor` + `SigningCredentials` (HMAC-SHA256), đọc `JwtOptions`.

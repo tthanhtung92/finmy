@@ -37,7 +37,7 @@ Nhầm hai cái là lỗi API design kinh điển. `RequireAuthorization()` cho 
 
 ## 5.4. Các bước làm
 
-1. **Seeder (Infrastructure):** viết một seeder (vd static class `IdentitySeeder` hoặc method mở rộng) nhận `RoleManager<ApplicationRole>` (và `UserManager` nếu seed cả Admin user): với mỗi role trong danh sách (`Admin`, `User`), nếu chưa tồn tại thì tạo. Tùy chọn: tạo một user Admin mặc định và `AddToRoleAsync(..., "Admin")` để có sẵn tài khoản Admin demo.
+1. **Seeder (Infrastructure):** viết seeder ở `Infrastructure/Persistence/` (vd static class `IdentitySeeder`), chữ ký gợi ý `static Task SeedAsync(RoleManager<ApplicationRole> roleManager, UserManager<ApplicationUser> userManager)`: với mỗi role trong danh sách (`Admin`, `User`), `RoleExistsAsync` false thì `CreateAsync(new ApplicationRole { Name = ... })`. Tùy chọn: tạo một user Admin mặc định rồi `AddToRoleAsync(user, "Admin")` để có sẵn tài khoản Admin demo.
 2. **Gọi seeder ở host:** trong `Program.cs`, sau `var app = builder.Build();` và **trước** `app.Run();`, mở một scope, resolve seeder, chạy nó (await). Đặt trước hoặc sau `UseModules` đều được, miễn trước `Run`.
 3. **Đảm bảo role vào token:** kiểm lại `AuthService.LoginAsync` gọi `GetRolesAsync` và truyền vào `IJwtTokenGenerator` (Bước 2/3). Không có bước này thì token không có role.
 4. **Endpoint demo (Api):** trong `IdentityModule.MapEndpoints`, thêm:
@@ -77,18 +77,26 @@ curl -i http://localhost:5xxx/identity/admin-only -H "Authorization: Bearer <AT_
 - **Quên `RequireAuthorization` → endpoint hớ hênh.** Endpoint không gắn gì thì **ai cũng vào**, kể cả không token. Với `AddIdentityCore` không có fallback policy mặc định, nên phải gắn `RequireAuthorization` cho từng endpoint cần bảo vệ (hoặc set fallback policy toàn cục nếu muốn "mặc định phải đăng nhập").
 - **Kỳ vọng đổi role có hiệu lực ngay.** Đổi role trong DB không đổi token đang cầm. Chỉ có access token phát **sau đó** mới mang role mới. Nhớ giải thích được điều này.
 
-## 5.7. Góc kể khi phỏng vấn
+## 5.7. Ba bẫy dễ dính nhất
+
+Nếu chỉ nhớ ba thứ:
+
+1. **403 oan do lệch tên role claim** — tên role claim lúc phát (Bước 2) phải khớp `RoleClaimType` lúc validate, không thì Admin thật vẫn 403.
+2. **Seed sai đời sống dịch vụ** — `RoleManager`/`UserManager` là scoped; phải `app.Services.CreateScope()` rồi resolve trong scope, không resolve thẳng từ root.
+3. **Quên `RequireAuthorization`** — endpoint không gắn gì là ai cũng vào, kể cả không token.
+
+## 5.8. Góc kể khi phỏng vấn
 
 *"Phân quyền theo role của tôi dựa trên role claim trong JWT, nên middleware không tra DB mỗi request, đánh đổi là đổi role chỉ có hiệu lực ở access token kế tiếp. Tôi seed role lúc startup trong một scope riêng vì RoleManager là scoped. Tôi phân biệt rõ 401 (chưa xác thực, thiếu/sai token) với 403 (đã xác thực nhưng thiếu role). Một lỗi tôi lường trước là 403 oan khi tên role claim lúc phát lệch với RoleClaimType lúc validate, nên tôi thống nhất tên claim hai đầu."*
 
-## 5.8. Link tài liệu chính thức
+## 5.9. Link tài liệu chính thức
 
 - [Role-based authorization in ASP.NET Core](https://learn.microsoft.com/en-us/aspnet/core/security/authorization/roles?view=aspnetcore-10.0)
 - [Authorization in minimal APIs](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis/security?view=aspnetcore-10.0)
 - [RoleManager<TRole>](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.identity.rolemanager-1) · [UserManager<TUser>](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.identity.usermanager-1)
 - [Mapping, customizing, transforming claims (RoleClaimType)](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/claims?view=aspnetcore-10.0)
 
-## 5.9. Xong bước này khi
+## 5.10. Xong bước này khi
 
 - [x] Role `Admin`/`User` seed tự động lúc startup (scope đúng); có thể có sẵn một Admin user demo.
 - [x] Access token của Admin mang role claim `Admin` (thấy trên jwt.io).

@@ -52,10 +52,15 @@ Nhận `refreshToken` (thô) + `ip`:
 
 ## 4.5. Các bước làm
 
-1. **`IIdentityService` (Infrastructure impl):** thêm method "validate + rotate" thực thi thuật toán mục 4.3 (trả về `userId` + refresh token thô mới, hoặc null báo thất bại), và method "thu hồi cụm theo userId". Cân nhắc gộp rotation vào một method để nó chạy trong **một** `SaveChanges` (atomic).
+1. **`IIdentityService` (thêm vào interface Application, impl Infrastructure):** thêm method "validate + rotate" thực thi thuật toán mục 4.3, và method "thu hồi cụm theo userId". Chữ ký gợi ý (gõ thẳng được, vẫn primitive/record của Application):
+   - `Task<RotatedRefreshToken?> RotateRefreshTokenAsync(string rawRefreshToken, string ip)` — trả `null` khi thất bại (không thấy / hết hạn / reuse). Record kết quả: `record RotatedRefreshToken(Guid UserId, string RawRefreshToken)`, đặt cạnh interface ở `Application/Authentication/`.
+   - `Task RevokeRefreshTokenAsync(string rawRefreshToken)` — cho logout (hash → tìm → revoke nếu còn sống; idempotent).
+   - Việc "thu hồi cụm" (khi reuse detected) là **nội bộ Infra**, không cần lên interface — nhánh reuse trong `RotateRefreshTokenAsync` tự gọi. Gộp revoke-cũ + tạo-mới trong **một** `SaveChangesAsync` (atomic).
 2. **`AuthService.RefreshAsync`:** gọi Identity validate+rotate; nếu thất bại trả kết quả lỗi; nếu ok, lấy roles → phát access token mới → gói `AuthResult`.
 3. **`AuthService.LogoutAsync`:** hash token → tìm → nếu thấy và chưa revoke thì đặt `RevokedAt` = giờ; luôn trả 200/204 (idempotent, xem cạm bẫy).
-4. **Endpoints:** `POST /identity/refresh` nhận body chứa refresh token (record `RefreshRequest`), gọi `AuthService.RefreshAsync`, map ok → `Results.Ok(authResult)`, thất bại → `Results.Unauthorized()`. `POST /identity/logout` gọi `LogoutAsync` → `Results.NoContent()`.
+4. **Endpoints:** `POST /identity/refresh` nhận body chứa refresh token (record `RefreshRequest(string RefreshToken)` ở `Application/DTO/`), gọi `AuthService.RefreshAsync`, map ok → `Results.Ok(authResult)`, thất bại → `Results.Unauthorized()`. `POST /identity/logout` gọi `LogoutAsync` → `Results.NoContent()`.
+
+`AuthService` (Application) thêm: `Task<AuthResult?> RefreshAsync(string rawRefreshToken, string ip)` và `Task LogoutAsync(string rawRefreshToken)`.
 
 ## 4.6. Kiểm chứng
 
@@ -104,18 +109,26 @@ curl -i -X POST http://localhost:5xxx/identity/logout \
 - **Không dọn token chết.** Bảng `RefreshTokens` phình theo thời gian (mỗi lần refresh đẻ một dòng). Day 4 chưa cần; ghi nhận "cần job dọn token hết hạn/đã revoke" là một cải tiến kể được.
 - **Trả refresh token mới nhưng quên trả bản thô.** Client cần **thô** để lần sau gửi lại; DB giữ **hash**. Đừng trả hash.
 
-## 4.8. Góc kể khi phỏng vấn
+## 4.8. Ba bẫy dễ dính nhất
+
+Nếu chỉ nhớ ba thứ ở bước này:
+
+1. **Rotation không atomic** — revoke token cũ và tạo token mới phải trong **một** `SaveChangesAsync`; tách ra là hai request song song lọt qua được.
+2. **Quên nhánh reuse detection** — token đã revoke mà chỉ trả 401 (không thu hồi cụm) là mất toàn bộ giá trị bảo mật của bước này.
+3. **Quên hash input trước khi tra `TokenHash`** — so token thô với cột hash thì không bao giờ khớp, mọi refresh 401.
+
+## 4.9. Góc kể khi phỏng vấn
 
 *"Refresh token của tôi xoay vòng: mỗi lần refresh cấp token mới và revoke token vừa dùng, đánh dấu ReplacedByTokenHash để lần vết. Vì token đã dùng bị vô hiệu, nếu một token đã revoke lại được trình lên thì chắc chắn token bị nhân bản, tôi coi đó là compromise, thu hồi cả cụm refresh token của user và bắt đăng nhập lại, thay vì lặng lẽ từ chối. Rotation tôi gói trong một transaction để hai request song song không cùng qua được, cộng unique index trên hash làm lưới cuối. Đây là mô hình rotation + reuse detection kiểu Auth0."*
 
-## 4.9. Link tài liệu chính thức
+## 4.10. Link tài liệu chính thức
 
 - [Refresh Token Rotation (Auth0 Docs)](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation)
 - [EF Core: Save data / transactions](https://learn.microsoft.com/en-us/ef/core/saving/transactions)
 - [EF Core: ExecuteUpdate/ExecuteDelete](https://learn.microsoft.com/en-us/ef/core/saving/execute-insert-update-delete)
 - [SHA256.HashData](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.sha256.hashdata)
 
-## 4.10. Xong bước này khi
+## 4.11. Xong bước này khi
 
 - [x] `POST /identity/refresh` hợp lệ → cặp token mới; token cũ bị revoke + trỏ `ReplacedByTokenHash`.
 - [x] Dùng lại refresh token đã revoke → 401 **và** thu hồi cụm token đang sống của user.

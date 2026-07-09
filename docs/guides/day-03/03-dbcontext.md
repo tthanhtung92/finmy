@@ -57,17 +57,25 @@ Build xanh nghĩa là context kế thừa hợp lệ, generic khớp `Guid`, qua
 - **Generic lệch kiểu khóa:** `<…, Guid>` nhưng entity khai `string` → không biên dịch.
 - **Dùng `AddIdentity`/`AddDefaultIdentity` thay vì `AddIdentityCore`:** kéo cookie scheme thừa, dễ đụng độ khi cấu hình JwtBearer ở Day 4.
 
-## 3.7. Góc kể khi phỏng vấn
+## 3.7. Ba bẫy dễ dính nhất
+
+Nếu chỉ nhớ ba thứ:
+
+1. **Giữ nguyên tên `IdentityDbContext`** — trùng tên lớp base, lỗi biên dịch "circular base class". Đổi thành `IdentityModuleDbContext`.
+2. **Quên `base.OnModelCreating(builder)` hoặc gọi sau cấu hình custom** — quên thì migration thiếu 7 bảng Identity; gọi sau thì base ghi đè cấu hình `RefreshToken` của bạn (EF last-one-wins). Gọi base **dòng đầu**.
+3. **Dùng `AddIdentity`/`AddDefaultIdentity` thay `AddIdentityCore`** — kéo cookie scheme + UI thừa, đụng độ khi cấu hình JwtBearer ở Day 4.
+
+## 3.8. Góc kể khi phỏng vấn
 
 *"Kế thừa `IdentityDbContext<…, Guid>` để EF tự sinh schema Identity; tôi thêm `RefreshToken` là bảng của mình, cấu hình 1-n bằng Fluent API **sau khi** gọi `base.OnModelCreating`. Vì EF last-one-wins, gọi base trước để nó dựng nền rồi mình chỉnh lên trên. Tôi chọn `AddIdentityCore` thay vì `AddIdentity` vì auth qua JWT nên không cần lớp cookie/UI."*
 
-## 3.8. Link tài liệu chính thức
+## 3.9. Link tài liệu chính thức
 
 - [Customize the model (base context types & OnModelCreating)](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-10.0#customize-the-model)
 - [Configure ASP.NET Core Identity (`AddIdentityCore` vs `AddIdentity`)](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-configuration?view=aspnetcore-10.0)
 - [EF Core Relationships (one-to-many)](https://learn.microsoft.com/en-us/ef/core/modeling/relationships/one-to-many)
 
-## 3.9. Xong bước này khi
+## 3.10. Xong bước này khi
 
 - [x] Context đổi tên thành `IdentityModuleDbContext`, kế thừa `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>` (né trùng tên base), factory đổi theo.
 - [x] `OnModelCreating` gọi `base` **trước**, rồi cấu hình `RefreshToken` (DbSet + quan hệ 1-n + index TokenHash).

@@ -74,18 +74,26 @@ Build xanh nghĩa là ba entity hợp lệ về kiểu: `ApplicationUser`/`Appli
 - **Lệch kiểu khóa User vs Role:** `ApplicationUser : IdentityUser<Guid>` nhưng `ApplicationRole : IdentityRole` (string) → khai `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>` không biên dịch. Hai cái phải cùng `Guid`.
 - **Tự khai lại field có sẵn:** UserName, Email, PasswordHash, SecurityStamp… đã có trong `IdentityUser`.
 
-## 2.7. Góc kể khi phỏng vấn
+## 2.7. Ba bẫy dễ dính nhất
+
+Nếu chỉ nhớ ba thứ:
+
+1. **Đặt `ApplicationUser`/`ApplicationRole` nhầm vào Domain** — kéo framework Identity xuống lõi, phá Quyết định 2. Chúng ở Infrastructure.
+2. **`RefreshToken` cầm navigation `ApplicationUser`** — Domain → Infrastructure, sai chiều phân lớp và Domain đỏ. Chỉ giữ `UserId: Guid`.
+3. **Lệch kiểu khóa User vs Role** (`IdentityUser<Guid>` nhưng `IdentityRole` string) — DbContext generic không biên dịch. Hai cái cùng `Guid`.
+
+## 2.8. Góc kể khi phỏng vấn
 
 *"`ApplicationUser`/`ApplicationRole` tôi để ở Infrastructure vì chúng kế thừa framework Identity, auth là mối lo hạ tầng. `RefreshToken` là khái niệm nghiệp vụ nên ở Domain, nhưng nó trỏ user bằng `UserId` (id-reference) thay vì navigation, vì Domain không được biết `ApplicationUser` ở Infrastructure. Quan hệ 1-n tôi cấu hình ở DbContext bằng Fluent API, không cần navigation hai chiều. Refresh token lưu hash thay token thô, đủ field để rotation và thu hồi từng token trên từng thiết bị."*
 
-## 2.8. Link tài liệu chính thức
+## 2.9. Link tài liệu chính thức
 
 - [Custom user data (Identity model customization)](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-10.0#custom-user-data)
 - [IdentityUser.cs (dotnet/aspnetcore)](https://github.com/dotnet/aspnetcore/blob/main/src/Identity/Extensions.Stores/src/IdentityUser.cs)
 - [eShopOnWeb (ApplicationUser trong Infrastructure/Identity)](https://github.com/dotnet-architecture/eShopOnWeb/blob/main/src/Infrastructure/Identity/ApplicationUser.cs)
 - [Date/time trong Npgsql (timestamptz vs timestamp)](https://www.npgsql.org/doc/types/datetime.html)
 
-## 2.9. Xong bước này khi
+## 2.10. Xong bước này khi
 
 - [x] `ApplicationUser`/`ApplicationRole` ở **Infrastructure**, kế thừa `IdentityUser<Guid>`/`IdentityRole<Guid>`.
 - [x] `RefreshToken` ở **Domain**, POCO thuần, chỉ giữ `UserId: Guid` + các field rotation, **không** navigation `ApplicationUser`.
