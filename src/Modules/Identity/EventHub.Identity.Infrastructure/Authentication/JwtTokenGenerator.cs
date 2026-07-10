@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 
 using EventHub.Identity.Application.Authentication;
+using EventHub.Identity.Infrastructure.Options;
 
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;

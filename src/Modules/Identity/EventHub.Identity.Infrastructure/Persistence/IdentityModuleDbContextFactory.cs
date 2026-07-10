@@ -8,8 +8,9 @@ public sealed class IdentityModuleDbContextFactory : IDesignTimeDbContextFactory
 {
     public IdentityModuleDbContext CreateDbContext(string[] args)
     {
+        // UserSecretID configure at EventHub.Identity.Infrastructure.csproj (<PropertyGroup>)
         var configuration = new ConfigurationBuilder()
-            .AddUserSecrets("2a471e71-84f6-4d13-bdd1-386bb5509270")
+            .AddUserSecrets<IdentityModuleDbContextFactory>()
             .AddEnvironmentVariables()
             .Build();
 

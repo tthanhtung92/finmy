@@ -1,4 +1,4 @@
-namespace EventHub.Identity.Infrastructure.Authentication;
+namespace EventHub.Identity.Infrastructure.Options;
 
 public class JwtOptions
 {

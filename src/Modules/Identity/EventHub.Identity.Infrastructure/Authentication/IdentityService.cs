@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using EventHub.Identity.Application.Authentication;
 using EventHub.Identity.Domain.Identity;
 using EventHub.Identity.Infrastructure.Identity;
+using EventHub.Identity.Infrastructure.Options;
 using EventHub.Identity.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Identity;
@@ -112,8 +113,6 @@ public class IdentityService(
         }
     }
 
-    #region Get Helper
-
     public async Task<IReadOnlyList<string>> GetRolesAsync(Guid userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
@@ -128,8 +127,6 @@ public class IdentityService(
         var user = await _userManager.FindByIdAsync(userId.ToString());
         return user?.Email;
     }
-
-    #endregion Get Helper
 
     #region Private Method
 

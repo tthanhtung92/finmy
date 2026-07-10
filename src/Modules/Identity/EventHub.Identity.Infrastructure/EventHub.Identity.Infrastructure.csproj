@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <UserSecretsId>2a471e71-84f6-4d13-bdd1-386bb5509270</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
