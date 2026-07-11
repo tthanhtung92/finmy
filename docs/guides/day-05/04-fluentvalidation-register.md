@@ -37,7 +37,7 @@ Bốn mảnh:
 - `Directory.Packages.props` chưa có FluentValidation.
 - `Identity.Application` có `RegisterRequest(string Email, string Password)` (trong `Authentication/AuthService.cs`, cùng file các DTO). Chưa validator nào.
 - `Modularity` (sau Bước 2) đã có `ResultExtensions`; chưa có filter.
-- `IdentityModule.ConfigureServices` hiện chỉ gọi `services.AddInfrastructure(configuration)`. `MapEndpoints` có route `/identity/register` (dạng cũ, sẽ refactor ở Bước 5).
+- `IdentityModule.ConfigureServices` hiện chỉ gọi `services.AddInfrastructure(configuration)`. Còn `IdentityModule.MapEndpoints` **không** khai route trực tiếp — nó uỷ quyền cho `IdentityCoreEndpoints.MapEndpoints(endpoints)` (file `Api/Endpoints/IdentityCoreEndpoints.cs`, Day 4 đã tách ra). Route `/identity/register` (dạng cũ, sẽ refactor ở Bước 5) nằm trong file đó, cạnh `/login`, `/refresh`, `/logout`.
 - Bước này **thêm**: package, `RegisterRequestValidator.cs`, `ValidationFilter.cs`, đăng ký validator, gắn filter. **Chưa** đổi thân handler register (Bước 5 làm).
 
 ## 4.5. Bản đồ thi công
@@ -100,7 +100,7 @@ flowchart TD
 
 - **Đăng ký validator** trong `IdentityModule.ConfigureServices`: `services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();` — quét assembly `Identity.Application`, tự đăng ký **mọi** `AbstractValidator<T>` trong đó là `IValidator<T>` (Scoped). Vì sao assembly-scan trong module: validator mới (Events, Ticketing) tự được bắt khi thêm, không phải sửa Bootstrap; và **module tự lo** validator của mình (Bootstrap mỏng).
   - **Quyết định của bạn:** thay vì scan, có thể `services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();` từng cái — tường minh hơn nhưng phải nhớ thêm dòng mỗi validator mới. Mentor khuyến nghị **scan** (`AddValidatorsFromAssemblyContaining`) cho tiện.
-- **Gắn filter** lên route trong `MapEndpoints`: sau `endpoints.MapPost("/identity/register", handler)`, nối `.AddEndpointFilter<ValidationFilter<RegisterRequest>>();`.
+- **Gắn filter** lên route trong `IdentityCoreEndpoints.MapEndpoints` (file `Api/Endpoints/IdentityCoreEndpoints.cs`, **không** phải `IdentityModule.cs`): sau `endpoints.MapPost("/identity/register", handler)`, nối `.AddEndpointFilter<ValidationFilter<RegisterRequest>>();`.
   - **Micro-gotcha:** `.AddEndpointFilter` gắn trên **route trả về** của `MapPost` (kiểu `RouteHandlerBuilder`). Nối chuỗi ngay sau `MapPost(...)` hoặc lưu biến rồi gọi.
 
 ### DI + lifetime

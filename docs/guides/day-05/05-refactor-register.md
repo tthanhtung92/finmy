@@ -37,8 +37,8 @@
 - `Application/Authentication/IIdentityService.cs`: `RegisterUserAsync(string email, string password)` trả `Task<RegisterOutcome>`; file này **cũng** khai `record RegisterOutcome(bool Succeeded, Guid? UserId, RegisterFailureReason Reason, string[] Errors)` + `enum RegisterFailureReason { None, DuplicateEmail, WeakPassword, Unknown }` + `record RotatedRefreshToken(...)`.
 - `Infrastructure/Authentication/IdentityService.cs`: impl `RegisterUserAsync` dựng `ApplicationUser`, gọi `CreateAsync`, map thành công → `RegisterOutcome(true, user.Id, None, [])`, thất bại → `RegisterOutcome(false, null, <reason>, errors)` qua extension `ToRegisterFailureReason` (ở Infra).
 - `Application/Authentication/AuthService.cs`: `RegisterAsync(RegisterRequest request)` trả `Task<RegisterOutcome>`, chỉ gọi `RegisterUserAsync` và trả thẳng.
-- `Api/IdentityModule.cs`: endpoint `/identity/register` gọi `svc.RegisterAsync(req)`, guard `outcome.Succeeded → Results.Ok()`, else `switch` trên `outcome.Reason` map `DuplicateEmail → Conflict`, `WeakPassword → ValidationProblem`, `_ → Problem`.
-- **Reference:** kiểm `Identity.Application.csproj` — có reference `SharedKernel` chưa? Nhiều khả năng **chưa**. Cần thêm để Application thấy `Result`/`Error`/`ErrorType`. (Infra reference Application nên thấy transitively; Api reference Modularity nên thấy `Match`/`ToProblemDetails`.)
+- `Api/Endpoints/IdentityCoreEndpoints.cs`: endpoint `/identity/register` (trong `IdentityCoreEndpoints.MapEndpoints`, **không** phải `IdentityModule.cs` — Day 4 đã tách endpoint ra file này) gọi `svc.RegisterAsync(req)`, guard `outcome.Succeeded → Results.Ok()`, else `switch` trên `outcome.Reason` map `DuplicateEmail → Conflict`, `WeakPassword → ValidationProblem`, `_ → Problem`.
+- **Reference:** đã xác nhận `Identity.Application.csproj` hiện **chỉ** reference `EventHub.Identity.Domain`, **chưa** có `SharedKernel`. Cần thêm ProjectReference tới `SharedKernel` để Application thấy `Result`/`Error`/`ErrorType`. (Infra reference Application nên thấy transitively; Api reference Modularity nên thấy `Match`/`ToProblemDetails`.)
 
 ## 5.5. Bản đồ thi công
 
