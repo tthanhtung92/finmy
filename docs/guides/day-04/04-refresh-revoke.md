@@ -44,6 +44,23 @@ Nhận `refreshToken` (thô) + `ip`:
 5. **Phát access token mới:** lấy roles của `token.UserId` → `IJwtTokenGenerator`.
 6. Trả `AuthResult` (access token mới + refresh token **thô** mới + hạn).
 
+Cây quyết định của một request `/refresh` (nhánh `revoked` là linh hồn của bước — reuse detection):
+
+```mermaid
+flowchart TD
+    A["/refresh (rawRefreshToken, ip)"] --> B[hash rawRefreshToken]
+    B --> C{"tìm TokenHash == hash?"}
+    C -->|không thấy| F1["401 (token bịa)"]
+    C -->|thấy dòng token| D{"RevokedAt != null?"}
+    D -->|"đã revoke — REUSE DETECTED"| R["thu hồi cụm: revoke MỌI token sống của UserId"]
+    R --> F2["401 (bắt đăng nhập lại)"]
+    D -->|chưa revoke| E{"ExpiresAt &lt;= now?"}
+    E -->|hết hạn| F3["401 (không thu hồi cụm)"]
+    E -->|còn hạn — hợp lệ| G["rotate: sinh token mới + revoke token cũ<br/>ReplacedByTokenHash = hash(token mới)<br/>một SaveChangesAsync (atomic)"]
+    G --> H["phát access token mới theo roles"]
+    H --> I["200 AuthResult (access + refresh thô mới)"]
+```
+
 ## 4.4. Dữ kiện đã xác minh
 
 - Truy vấn EF theo cột hash: `FirstOrDefaultAsync(rt => rt.TokenHash == hash)`; cập nhật rồi `SaveChangesAsync`. Cột `TokenHash` đã có **unique index** (Day 3), nên tra một dòng là xác định. Nguồn: [EF Core querying / saving](https://learn.microsoft.com/en-us/ef/core/saving/basic).

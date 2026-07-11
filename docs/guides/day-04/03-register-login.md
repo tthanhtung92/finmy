@@ -51,16 +51,32 @@ Bước này **thêm mới**: record `RegisterOutcome`, class `IdentityService`,
 
 ## 3.5. Sơ đồ trace một request `/login`
 
-```text
-HTTP POST /identity/login  { email, password }
-  -> endpoint (Api, mỏng): bind LoginRequest, lấy IP từ HttpContext, gọi AuthService
-    -> AuthService.LoginAsync (Application): điều phối
-        -> IIdentityService.VerifyPasswordAsync(email, pw)      -> Guid? userId   (Infra: UserManager.CheckPasswordAsync)
-        -> IIdentityService.GetRolesAsync(userId)               -> roles          (Infra: UserManager.GetRolesAsync)
-        -> IJwtTokenGenerator.GenerateToken(userId, email, roles) -> access token (đã có từ Bước 2)
-        -> IIdentityService.CreateRefreshTokenAsync(userId, ip) -> refresh token thô  (Infra: RNG + hash + DbContext)
-      <- gói AuthResult(accessToken, refreshToken, accessTokenExpiresAt)
-  <- Results.Ok(authResult)              // sai credentials -> Results.Unauthorized()
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Endpoint as Endpoint (Api, mỏng)
+    participant Auth as AuthService (Application)
+    participant Id as IIdentityService (Infra impl)
+    participant Jwt as IJwtTokenGenerator (Infra impl)
+    Client->>Endpoint: POST /identity/login { email, password }
+    Endpoint->>Auth: LoginAsync(request, ip)
+    Auth->>Id: VerifyPasswordAsync(email, password)
+    Note right of Id: Infra: UserManager.CheckPasswordAsync
+    Id-->>Auth: Guid? userId
+    alt userId == null (sai credentials)
+        Auth-->>Endpoint: null
+        Endpoint-->>Client: 401 Results.Unauthorized()
+    else userId hợp lệ
+        Auth->>Id: GetRolesAsync(userId)
+        Id-->>Auth: roles
+        Auth->>Jwt: GenerateToken(userId, email, roles)
+        Jwt-->>Auth: access token
+        Auth->>Id: CreateRefreshTokenAsync(userId, ip)
+        Note right of Id: Infra: RNG + hash + DbContext
+        Id-->>Auth: refresh token (thô)
+        Auth-->>Endpoint: AuthResult(accessToken, refreshToken, expiresAt)
+        Endpoint-->>Client: 200 Results.Ok(authResult)
+    end
 ```
 
 **Ranh giới cốt tử:** `AuthService` (Application) **không bao giờ** thấy `UserManager`, `IdentityResult`, hay `JwtOptions` — cả ba ở Infrastructure. `AuthService` chỉ biết `IIdentityService` và `IJwtTokenGenerator`. Đây là điểm dễ phá nhất, cũng là điểm đáng kể khi phỏng vấn.

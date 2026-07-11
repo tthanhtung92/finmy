@@ -91,6 +91,13 @@ Cơ chế: Application **sở hữu** cái abstraction nó cần (`IIdentityServ
 
 **Cái giá phải trả (nói thẳng):** thêm một lớp adapter (interface + class impl); surface primitive nên mỗi nhu cầu Identity mới (đổi mật khẩu, gen token…) phải khai thêm một method trên interface; Domain trỏ user bằng `UserId` trần thay vì navigation hai chiều. Đổi lại: lõi domain **thuần tuyệt đối** và có thể test/thay Identity mà không đụng Application. Đây đúng là thứ đáng "kể khi phỏng vấn" cho một CV piece về kiến trúc.
 
+```mermaid
+graph LR
+    Infrastructure --> Application
+    Application --> Domain
+    Infrastructure -. ref .-> IdentityEfCore["Microsoft.AspNetCore.Identity.EntityFrameworkCore"]
+```
+
 ```text
 EventHub.Identity.Domain         → RefreshToken (POCO thuần: UserId: Guid), KHÔNG package Identity
 EventHub.Identity.Application    → IIdentityService (interface, surface primitive)  [method: Day 4]

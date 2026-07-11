@@ -18,6 +18,22 @@ Tạo một `DbContext` cho module Identity trong project Infrastructure, cấu 
 
 **Vì sao cần design-time DbContext factory.** `dotnet ef` chạy **lúc design-time**: tức lúc bạn gõ lệnh ở terminal để sinh/áp migration, **không** phải lúc host chạy thật. Ở thời điểm đó **không có DI container của host** đã dựng sẵn để cấp `DbContextOptions` (connection string, provider). EF phải tự khởi tạo được `DbContext`. Nó thử vài cách; nếu không suy ra được, bạn cung cấp một `IDesignTimeDbContextFactory<TContext>`: một class mà trong đó *bạn* tự dựng `DbContextOptionsBuilder` (đọc connection string design-time, gọi `UseNpgsql`) và trả về context. Nhờ đó `dotnet ef` có đường tạo context mà không cần chạy toàn bộ host. (Cách thay thế: trỏ `--startup-project` vào host để EF mượn cấu hình DI của host, chọn một trong hai, đừng làm cả hai.)
 
+Hai thời điểm, hai đường cấp connection string cho cùng một `DbContext`:
+
+```mermaid
+flowchart TD
+    subgraph Runtime["Runtime (host chạy thật)"]
+        H[Host DI] --> A["AddNpgsql&lt;IdentityDbContext&gt;(connectionString)"]
+        A --> S1["connection string đọc từ appsettings.json / User Secrets"]
+    end
+    subgraph DesignTime["Design-time (dotnet ef)"]
+        E[dotnet ef] --> F["IDesignTimeDbContextFactory.CreateDbContext"]
+        F --> B["DbContextOptionsBuilder.UseNpgsql(connectionString)"]
+    end
+    S1 --> Ctx[(IdentityDbContext)]
+    B --> Ctx
+```
+
 ## 3.3. Các bước làm và ranh giới với Day 3
 
 > **QUAN TRỌNG, đọc trước khi gõ:** Day 3 mới model `User`/`Role`/`RefreshToken` thật. Hôm nay **chỉ cần đủ để migration chạy thông**, đừng thiết kế entity nghiệp vụ ở đây.

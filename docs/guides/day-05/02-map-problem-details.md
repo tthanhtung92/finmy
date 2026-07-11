@@ -26,6 +26,22 @@ Trong `src/Shared/EventHub.Modularity`:
 
 **Vì sao gom map status vào một hàm:** status HTTP cho mỗi `ErrorType` là **một quyết định, một chỗ**. Rải `switch` này ở mọi endpoint là mời gọi lệch (chỗ này Conflict→409, chỗ kia lỡ →400). Một hàm duy nhất trong `ResultExtensions` là source of truth.
 
+Ánh xạ `ErrorType` → HTTP status (nhánh `_` gộp với `Failure` về 500 để một `ErrorType` mới lỡ chưa map cũng an toàn):
+
+```mermaid
+flowchart LR
+    E{ErrorType} --> V[Validation]
+    E --> N[NotFound]
+    E --> C[Conflict]
+    E --> U[Unauthorized]
+    E --> F["Failure / _"]
+    V --> S400["400 Bad Request"]
+    N --> S404["404 Not Found"]
+    C --> S409["409 Conflict"]
+    U --> S401["401 Unauthorized"]
+    F --> S500["500 Internal Server Error"]
+```
+
 ## 2.3. Dữ kiện đã xác minh
 
 - **`Results.Problem(...)`** (namespace `Microsoft.AspNetCore.Http`, kiểu trả `IResult`) dựng một response ProblemDetails; nhận `detail`, `statusCode`, `title`, `type`, `instance`, và `extensions` (dictionary field mở rộng). Content-Type là `application/problem+json`. Nguồn: [Create responses in Minimal API apps (MS Learn, aspnetcore-10.0)](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/minimal-apis/responses?view=aspnetcore-10.0), [Handle errors in ASP.NET Core APIs](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/error-handling-api?view=aspnetcore-10.0).

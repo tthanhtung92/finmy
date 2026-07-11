@@ -47,6 +47,24 @@ Hai type, hai project:
    - Gọi `new JsonWebTokenHandler().CreateToken(descriptor)` → trả chuỗi.
 3. **DI:** trong `AddInfrastructure`, đăng ký `IJwtTokenGenerator` → `JwtTokenGenerator`.
 
+Luồng tạo một access token bên trong `JwtTokenGenerator` (caller chỉ đưa primitive vào, nhận `string` ra):
+
+```mermaid
+sequenceDiagram
+    participant Caller as AuthService (Application)
+    participant Gen as JwtTokenGenerator (Infrastructure)
+    participant Handler as JsonWebTokenHandler
+    Caller->>Gen: GenerateToken(userId, email, roles)
+    Gen->>Gen: dựng claims — sub=userId, email, một role/phần tử roles
+    Gen->>Gen: SigningCredentials(SymmetricSecurityKey, HmacSha256)
+    Gen->>Gen: SecurityTokenDescriptor(Subject, Issuer, Audience, Expires)
+    Gen->>Handler: CreateToken(descriptor)
+    Handler-->>Gen: string (JWT đã ký)
+    Gen-->>Caller: access token (string)
+```
+
+> **Ranh giới cốt tử:** `JsonWebTokenHandler`, `SigningCredentials`, `JwtOptions` **chỉ** sống trong `JwtTokenGenerator` (Infrastructure). `AuthService` (Application) chỉ thấy chữ ký primitive `GenerateToken(string, string, IEnumerable<string>)` — không hề biết token được ký thế nào.
+
 > **Lưu ý claim role & validate:** ở Bước 1 nếu bạn để `MapInboundClaims` mặc định, handler validate sẽ ánh xạ tên claim ngắn (`sub`, `role`) sang URI dài kiểu `ClaimTypes.*`. Để `RequireRole` (Bước 5) hoạt động, role claim khi **đọc ra** phải khớp `ClaimsIdentity.RoleClaimType`. Cách chắc ăn: khi dựng claim role dùng `ClaimTypes.Role` (đường dài) *hoặc* cấu hình `RoleClaimType` trong `TokenValidationParameters`. Mục 2.7 nói kỹ cạm bẫy này, đây là chỗ hay làm 403 oan.
 
 ## 2.5. Kiểm chứng

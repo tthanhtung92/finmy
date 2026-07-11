@@ -96,6 +96,17 @@ Handler bắt exception là **mối lo toàn cục của pipeline HTTP**, không
 
 Sơ đồ chiều tham chiếu (thêm mảnh Day 5, không đảo chiều nào):
 
+```mermaid
+graph LR
+    Host["EventHub.Api (host)"] --> Api["Identity.Api"]
+    Api --> Application["Identity.Application"]
+    Infrastructure["Identity.Infrastructure"] --> Application
+    Application --> Domain["Identity.Domain"]
+    Api -.->|dùng| Modularity["EventHub.Modularity"]
+    Application -.->|dùng| SharedKernel["EventHub.SharedKernel"]
+    Modularity -.->|dùng| SharedKernel
+```
+
 ```text
 EventHub.SharedKernel        → Result, Result<T>, Error, ErrorType   (THUẦN, không ASP.NET)
 EventHub.Modularity          → IModule (đã có) + ResultExtensions.ToProblemDetails() + ValidationFilter<T>

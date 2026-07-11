@@ -12,6 +12,15 @@ Quy tắc bất di bất dịch:
 
 Vòng lặp mỗi ngày:
 
+```mermaid
+flowchart LR
+    A[Đọc guide ngày] --> B[Hiểu khái niệm]
+    B --> C[Tự code]
+    C --> D[Tự verify]
+    D --> E[Nhờ mentor review]
+    E --> F[Commit]
+```
+
 ```text
 Đọc guide ngày → hiểu khái niệm → tự code → tự verify → nhờ mentor review → commit
 ```

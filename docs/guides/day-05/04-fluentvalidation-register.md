@@ -44,15 +44,16 @@ Bốn mảnh:
 
 ### Sơ đồ trace một request `/register` (sau khi gắn filter)
 
-```text
-HTTP POST /identity/register  { email, password }
-  -> ValidationFilter<RegisterRequest>.InvokeAsync
-       - resolve IValidator<RegisterRequest> từ RequestServices
-       - lấy RegisterRequest từ context.Arguments
-       - await validator.ValidateAsync(request)
-       - IsValid == false ? -> Results.ValidationProblem(result.ToDictionary())  [DỪNG, 400, handler KHÔNG chạy]
-       - IsValid == true  ? -> await next(context)  [đi tiếp]
-    -> handler thật của endpoint (Bước 5: gọi AuthService, trả Result)
+```mermaid
+flowchart TD
+    A["POST /identity/register { email, password }"] --> B["ValidationFilter&lt;RegisterRequest&gt;.InvokeAsync"]
+    B --> C[resolve IValidator từ RequestServices]
+    C --> D[lấy RegisterRequest từ context.Arguments]
+    D --> E["await validator.ValidateAsync(request)"]
+    E --> F{IsValid?}
+    F -->|false| G["Results.ValidationProblem(result.ToDictionary())<br/>DỪNG — 400, handler KHÔNG chạy"]
+    F -->|true| H["await next(context)"]
+    H --> I["handler thật của endpoint<br/>(Bước 5: gọi AuthService, trả Result)"]
 ```
 
 **Ranh giới cốt tử:** khi validation fail, **handler không chạy** — service không hề thấy request rác. Filter trả `IResult` ngay, request dừng tại đây.

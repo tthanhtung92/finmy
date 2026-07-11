@@ -82,6 +82,14 @@ Login không phải một thao tác đơn, nó là chuỗi: kiểm mật khẩu 
 
 Sơ đồ chiều tham chiếu (y hệt Day 3, chỉ thêm mảnh mới):
 
+```mermaid
+graph LR
+    Host["EventHub.Api (host)"] --> Api["Identity.Api"]
+    Api --> Application["Identity.Application"]
+    Infrastructure["Identity.Infrastructure"] --> Application
+    Application --> Domain["Identity.Domain"]
+```
+
 ```text
 EventHub.Identity.Domain         → RefreshToken (POCO, đã có từ Day 3)
 EventHub.Identity.Application    → IIdentityService (mở rộng), IJwtTokenGenerator, AuthService, các DTO

@@ -15,6 +15,42 @@ Bốn type, trong project `src/Shared/EventHub.SharedKernel`:
 3. **`class Result`** — kết quả một thao tác **không trả giá trị**: `IsSuccess`/`IsFailure` + `Error`. Có factory `Success()` / `Failure(error)`.
 4. **`class Result<T>`** — kết quả một thao tác **có trả giá trị** kiểu `T` khi thành công: thêm property `Value`. Có implicit conversion để viết gọn.
 
+Quan hệ bốn type (`Result<T>` kế thừa `Result`; `Result` giữ một `Error`; `Error` mang một `ErrorType`):
+
+```mermaid
+classDiagram
+    class ErrorType {
+        <<enum>>
+        Failure
+        Validation
+        NotFound
+        Conflict
+        Unauthorized
+    }
+    class Error {
+        <<record>>
+        +string Code
+        +string Description
+        +ErrorType Type
+        +Error None$
+    }
+    class Result {
+        +bool IsSuccess
+        +bool IsFailure
+        +Error Error
+        +Success() Result$
+        +Failure(Error) Result$
+    }
+    class Result~T~ {
+        +T Value
+        +Success(T) Result~T~$
+        +Failure(Error) Result~T~$
+    }
+    Result <|-- Result~T~ : kế thừa
+    Result --> Error : giữ
+    Error --> ErrorType : phân loại
+```
+
 ## 1.2. Vì sao
 
 **Vì sao tách `Error` thành record riêng, không chỉ để một `string message`:** một `string` mất thông tin phân loại. Endpoint cần biết lỗi này nên ra 409 hay 404 — thông tin đó nằm ở `Error.Type`, không suy được từ một câu mô tả. `Code` (vd `"Identity.DuplicateEmail"`) cho client/log đối chiếu ổn định kể cả khi `Description` đổi lời. Ba field phục vụ ba người đọc: `Type` cho tầng web chọn status, `Code` cho máy, `Description` cho người.

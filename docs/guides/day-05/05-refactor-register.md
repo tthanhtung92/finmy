@@ -44,16 +44,27 @@
 
 ### Sơ đồ trace `/register` sau refactor
 
-```text
-HTTP POST /identity/register  { email, password }  (đã qua ValidationFilter -> hình dạng OK)
-  -> endpoint (Api): gọi AuthService.RegisterAsync(req) -> Result<Guid>
-    -> AuthService.RegisterAsync (Application): gọi IIdentityService.RegisterUserAsync -> Result<Guid>
-        -> IdentityService.RegisterUserAsync (Infra):
-             CreateAsync(user, password)
-             Succeeded -> Result<Guid>.Success(user.Id)
-             Fail      -> đọc IdentityResult.Errors -> Error(Code, Description, ErrorType) -> Result<Guid>.Failure(error)
-      <- Result<Guid>
-  <- result.Match(id => Results.Ok(...))    // fail -> ToProblemDetails() -> 409/400/500 ProblemDetails
+```mermaid
+sequenceDiagram
+    participant Endpoint as Endpoint (Api)
+    participant Auth as AuthService (Application)
+    participant Id as IdentityService (Infra)
+    Note over Endpoint: đã qua ValidationFilter → hình dạng OK
+    Endpoint->>Auth: RegisterAsync(req)
+    Auth->>Id: RegisterUserAsync(email, password)
+    Id->>Id: CreateAsync(user, password)
+    alt Succeeded
+        Id-->>Auth: Result~Guid~.Success(user.Id)
+    else Fail
+        Id->>Id: đọc IdentityResult.Errors → Error(Code, Description, ErrorType)
+        Id-->>Auth: Result~Guid~.Failure(error)
+    end
+    Auth-->>Endpoint: Result~Guid~
+    alt IsSuccess
+        Endpoint-->>Endpoint: result.Match(id => Results.Ok(...))
+    else IsFailure
+        Endpoint-->>Endpoint: ToProblemDetails() → 409/400/500 ProblemDetails
+    end
 ```
 
 **Ranh giới cốt tử:** `IdentityError`/`IdentityResult` **chỉ** xuất hiện trong `IdentityService` (Infra). `AuthService` và endpoint thấy **chỉ** `Result<Guid>`/`Error`. Không leak type Identity lên Application/Api.

@@ -41,6 +41,29 @@ Mô tả bằng lời (bạn tự gõ):
 
 4. **Gọi trong `Program.cs` của host.** Thay phần wire tay (nếu có) bằng `builder.Services.AddModules(...)` và `app.UseModules()`.
 
+Luồng nạp module lúc host khởi động, hai pha tách nhau (đăng ký service trước khi build `app`, map endpoint sau):
+
+```mermaid
+sequenceDiagram
+    participant Program as Program.cs (host)
+    participant Registry as danh sách IModule (explicit)
+    participant Module as IdentityModule
+    Note over Program,Module: Pha 1 — cấu hình DI (trước app = builder.Build())
+    Program->>Registry: AddModules(services, configuration)
+    loop mỗi IModule trong danh sách
+        Registry->>Module: ConfigureServices(services, configuration)
+        Module-->>Registry: đăng ký DbContext, handler, option...
+    end
+    Note over Program,Module: Pha 2 — map endpoint (sau khi có app)
+    Program->>Registry: UseModules(app)
+    loop mỗi IModule trong danh sách
+        Registry->>Module: MapEndpoints(app)
+        Module-->>Registry: khai route (vd GET /identity/ping)
+    end
+```
+
+> **Ranh giới:** `IModule` chỉ để **host nạp** module lúc khởi động. Module **không** dùng nó để gọi sang module khác — cross-module vẫn chỉ qua `EventHub.Contracts` trên Wolverine.
+
 ## 4.4. Kiểm chứng
 
 ```bash

@@ -51,17 +51,23 @@ Chưa có exception handling nào. Bước này **thêm**: hai dòng `AddProblem
 
 ### Sơ đồ trace một request ném exception
 
-```text
-HTTP request tới một endpoint
-  -> UseExceptionHandler (bọc ngoài cùng, chờ sẵn)
-    -> UseAuthentication / UseAuthorization
-      -> UseModules -> endpoint chạy -> ném InvalidOperationException (bug/không lường)
-    <- exception bong ra khỏi endpoint
-  <- UseExceptionHandler bắt được, gọi GlobalExceptionHandler.TryHandleAsync(ctx, ex, ct)
-       - log ex đầy đủ (server-side)
-       - ghi ProblemDetails 500 tối giản vào response (client-side, KHÔNG kèm ex.Message/stack)
-       - return true
-  <- client nhận 500 application/problem+json, body câm
+```mermaid
+sequenceDiagram
+    participant Client
+    participant ExH as UseExceptionHandler (bọc ngoài cùng)
+    participant Pipe as UseAuthentication / UseAuthorization / UseModules
+    participant Endpoint
+    participant Handler as GlobalExceptionHandler
+    Client->>ExH: HTTP request
+    ExH->>Pipe: đi tiếp
+    Pipe->>Endpoint: chạy handler
+    Endpoint--xPipe: ném InvalidOperationException (không lường)
+    Pipe--xExH: exception bong ra
+    ExH->>Handler: TryHandleAsync(ctx, ex, ct)
+    Handler->>Handler: log ex đầy đủ (server-side)
+    Handler->>Handler: ghi ProblemDetails 500 tối giản (KHÔNG kèm ex.Message/stack)
+    Handler-->>ExH: return true
+    ExH-->>Client: 500 application/problem+json, body câm
 ```
 
 **Ranh giới cốt tử:** body trả client **không bao giờ** chứa `exception.Message`, stack trace, tên type exception, hay chi tiết DB. Những thứ đó chỉ đi vào **log phía server**. Đây là ranh giới bảo mật, không phải thẩm mỹ.

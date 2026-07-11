@@ -28,6 +28,19 @@ Bốn mảnh:
 
 Nhầm hai cái là lỗi API design kinh điển. `RequireAuthorization()` cho ra 401 khi chưa xác thực; `RequireRole` cho ra 403 khi xác thực rồi mà thiếu role.
 
+Một request tới `GET /identity/admin-only` (yêu cầu role `Admin`) đi qua hai cửa liên tiếp:
+
+```mermaid
+flowchart TD
+    A["GET /identity/admin-only"] --> B{"có access token hợp lệ?<br/>(chữ ký đúng, chưa hết hạn)"}
+    B -->|không| C["401 Unauthorized<br/>chưa biết bạn là ai"]
+    B -->|có| D{"token có role claim 'Admin'?"}
+    D -->|không| E["403 Forbidden<br/>biết rồi nhưng thiếu quyền"]
+    D -->|có| F["200 OK"]
+```
+
+> Middleware phân quyền chỉ đọc role **claim trong token**, không tra DB. Đổi role trong DB không đổi token đang cầm — chỉ access token phát **sau đó** mới mang role mới.
+
 ## 5.3. Dữ kiện đã xác minh
 
 - **Seed role** bằng `RoleManager<ApplicationRole>.CreateAsync(new ApplicationRole { Name = "Admin" })` nếu `RoleExistsAsync` trả false. `RoleManager` được đăng ký nhờ `.AddRoles<ApplicationRole>()` (đã có ở DI Day 3). Nguồn: [RoleManager<TRole>](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.identity.rolemanager-1).

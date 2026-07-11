@@ -26,6 +26,16 @@ Ba việc trong project `EventHub.Identity.Infrastructure`:
 
 > Dữ kiện: tài liệu Microsoft nêu rõ `AddDefaultIdentity` ≈ `AddAuthentication(cookies)` + `AddIdentityCore` + `AddDefaultUI`, tức phần cookie/UI là thứ `AddIdentityCore` **không** kéo theo. Nguồn: [customize-identity-model, mục AddDefaultIdentity](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-10.0#custom-user-data).
 
+Kế thừa base là thứ khiến EF sinh 7 bảng `AspNet*`; `DbSet<RefreshToken>` bạn thêm sinh bảng thứ 8 (`RefreshTokens`), nối 1-n với `AspNetUsers`:
+
+```mermaid
+graph TD
+    Ctx["IdentityModuleDbContext"] -->|kế thừa| Base["IdentityDbContext&lt;ApplicationUser, ApplicationRole, Guid&gt;"]
+    Base -->|EF sinh| AspNet["7 bảng AspNet*<br/>(Users, Roles, UserRoles, UserClaims,<br/>RoleClaims, UserLogins, UserTokens)"]
+    Ctx -->|"DbSet&lt;RefreshToken&gt;"| RT[(RefreshTokens)]
+    AspNet -. "1-n qua UserId" .-> RT
+```
+
 ## 3.3. Dữ kiện đã xác minh
 
 Theo [customize-identity-model (aspnetcore-10.0)](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-10.0):

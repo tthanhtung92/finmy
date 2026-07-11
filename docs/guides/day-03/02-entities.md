@@ -26,6 +26,28 @@ Tạo ba class, **ở hai project khác nhau**:
 
 **Vì sao quan hệ 1-n (một User → nhiều RefreshToken):** một user đăng nhập trên **nhiều thiết bị** (mỗi thiết bị một token), và **mỗi lần rotation** (Day 4) sinh token mới thay token cũ. Quan hệ 1-n cho phép **thu hồi từng token** độc lập. Quan hệ này được **cấu hình ở DbContext** ([Bước 3](03-dbcontext.md)) bằng Fluent API, không cần `RefreshToken` cầm navigation ngược.
 
+```mermaid
+erDiagram
+    ApplicationUser ||--o{ RefreshToken : "1-n (UserId, id-reference)"
+    ApplicationUser {
+        Guid Id PK
+        string UserName
+        string Email
+        string PasswordHash
+    }
+    RefreshToken {
+        Guid Id PK
+        Guid UserId FK
+        string TokenHash
+        DateTimeOffset ExpiresAt
+        DateTimeOffset CreatedAt
+        DateTimeOffset RevokedAt "nullable"
+        string ReplacedByTokenHash "nullable"
+    }
+```
+
+> **Ranh giới:** `ApplicationUser` ở **Infrastructure**, `RefreshToken` ở **Domain**. `RefreshToken` trỏ user bằng `UserId: Guid` (id-reference), **không** navigation `ApplicationUser` — nếu cầm navigation là Domain → Infrastructure, sai chiều phân lớp. Navigation (nếu có) chỉ đi một chiều từ phía `ApplicationUser`.
+
 ## 2.3. Dữ kiện đã xác minh: cách mở rộng đúng chuẩn
 
 Theo tài liệu Microsoft ([customize-identity-model, aspnetcore-10.0](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/customize-identity-model?view=aspnetcore-10.0)):
