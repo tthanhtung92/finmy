@@ -1,7 +1,11 @@
 using EventHub.Identity.Application.Authentication;
+using EventHub.Identity.Application.Authentication.Dto;
+using EventHub.Modularity;
+using EventHub.Modularity.Extensions;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
 
 namespace EventHub.Identity.Api.Endpoints;
@@ -12,22 +16,15 @@ public sealed class IdentityCoreEndpoints
     {
         endpoints.MapGet("/identity/ping", () => "Identity pong!");
 
-        endpoints.MapPost("/identity/register", async (RegisterRequest req, AuthService svc) =>
-        {
-            var outcome = await svc.RegisterAsync(req);
-
-            if (outcome.Succeeded)
-                return Results.Ok();
-
-            var result = outcome.Reason switch
+        endpoints
+            .MapPost("/identity/register", async (RegisterRequest req, AuthService svc) =>
             {
-                RegisterFailureReason.DuplicateEmail => Results.Conflict(outcome.Errors),
-                RegisterFailureReason.WeakPassword => Results.ValidationProblem(new Dictionary<string, string[]> { { "password", outcome.Errors } }),
-                _ => Results.Problem(),
-            };
+                var result = await svc.RegisterAsync(req);
 
-            return result;
-        });
+                // Tạm thời chưa có route cho Users, nhưng trả ra cho đúng chuẩn
+                return result.Match(id => Results.Created($"/identity/users/{id}", new { userId = id }));
+            })
+            .AddEndpointFilter<ValidationFilter<RegisterRequest>>();
 
         endpoints.MapPost("/identity/login", async (LoginRequest req, AuthService svc, HttpContext httpCtx, CancellationToken cancellationToken) =>
         {

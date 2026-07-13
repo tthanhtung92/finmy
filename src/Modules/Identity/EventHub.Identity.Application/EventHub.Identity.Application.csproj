@@ -1,6 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\EventHub.SharedKernel\EventHub.SharedKernel.csproj" />
     <ProjectReference Include="..\EventHub.Identity.Domain\EventHub.Identity.Domain.csproj" />
   </ItemGroup>
 

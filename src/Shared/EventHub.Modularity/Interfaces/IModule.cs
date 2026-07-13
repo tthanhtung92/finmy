@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace EventHub.Modularity;
+namespace EventHub.Modularity.Interfaces;
 
 public interface IModule
 {

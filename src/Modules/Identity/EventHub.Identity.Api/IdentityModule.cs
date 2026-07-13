@@ -1,6 +1,9 @@
 using EventHub.Identity.Api.Endpoints;
+using EventHub.Identity.Application.Authentication.Dto;
 using EventHub.Identity.Infrastructure;
-using EventHub.Modularity;
+using EventHub.Modularity.Interfaces;
+
+using FluentValidation;
 
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +16,9 @@ public sealed class IdentityModule : IModule
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddInfrastructure(configuration);
+
+        // Validator
+        services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

@@ -1,7 +1,7 @@
 using EventHub.Identity.Api;
-using EventHub.Modularity;
+using EventHub.Modularity.Interfaces;
 
-namespace EventHub.Api;
+namespace EventHub.Api.Extensions;
 
 public static class ModuleExtensions
 {

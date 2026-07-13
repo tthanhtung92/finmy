@@ -5,6 +5,7 @@ using EventHub.Identity.Domain.Identity;
 using EventHub.Identity.Infrastructure.Identity;
 using EventHub.Identity.Infrastructure.Options;
 using EventHub.Identity.Infrastructure.Persistence;
+using EventHub.SharedKernel.Results;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
@@ -24,7 +25,7 @@ public class IdentityService(
 {
     private static readonly string DummyHash = "AQAAAAIAAYagAAAAEJAFDF7PnQz36J3E45gvYddZHEHizqhHjuOgbu7K/4hVjNNdeMySLWn8JlT+P5v5Ew==";
 
-    public async Task<RegisterOutcome> RegisterUserAsync(string email, string password)
+    public async Task<Result<Guid>> RegisterUserAsync(string email, string password)
     {
         var user = new ApplicationUser
         {
@@ -33,11 +34,10 @@ public class IdentityService(
         };
 
         var result = await userManager.CreateAsync(user, password);
-        var failureReason = result.ToRegisterFailureReason();
 
         return result.Succeeded
-            ? new RegisterOutcome(true, user.Id, failureReason, [])
-            : new RegisterOutcome(false, null, failureReason, [.. result.Errors.Select(e => e.Description)]);
+            ? Result<Guid>.Success(user.Id)
+            : Result<Guid>.Failure<Guid>(result.ToError());
     }
 
     public async Task<Guid?> VerifyPasswordAsync(string email, string password)
@@ -173,7 +173,7 @@ public class IdentityService(
     #endregion
 }
 
-internal static class RegisterFailureReasonExtensions
+internal static class IdentityResultExtensions
 {
     private static readonly string[] EmailCodes = [
         nameof(IdentityErrorDescriber.DuplicateEmail),
@@ -189,23 +189,23 @@ internal static class RegisterFailureReasonExtensions
         nameof(IdentityErrorDescriber.PasswordRequiresUniqueChars),
     ];
 
-    public static RegisterFailureReason ToRegisterFailureReason(this IdentityResult result)
+    public static Error ToError(this IdentityResult result)
     {
         if (result.Succeeded)
         {
-            return RegisterFailureReason.None;
+            return Error.None;
         }
 
         if (result.Errors.Any(e => EmailCodes.Contains(e.Code)))
         {
-            return RegisterFailureReason.DuplicateEmail;
+            return new Error("Identity.DuplicateEmail", "This email address is already registered.", ErrorType.Conflict);
         }
 
         if (result.Errors.Any(e => PasswordCodes.Contains(e.Code)))
         {
-            return RegisterFailureReason.WeakPassword;
+            return new Error("Identity.WeakPassword", "The password does not meet the required complexity rules.", ErrorType.Validation);
         }
 
-        return RegisterFailureReason.Unknown;
+        return new Error("Identity.RegisterFailed", "Registration failed.", ErrorType.Failure);
     }
 }
