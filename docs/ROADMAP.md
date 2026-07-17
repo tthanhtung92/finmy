@@ -1,6 +1,6 @@
 # Finmy: Modular Monolith Backend (.NET 10)
 
-> Backend quản lý tài chính chung cho gia đình theo mô hình envelope budgeting, dựng để trình diễn các kỹ thuật backend cốt lõi: Authentication, Realtime, Caching, CDN, Messaging/Queue, và DevOps, mỗi phần ở mức *minimal nhưng đúng chuẩn production*.
+> Backend quản lý ngân sách chia sẻ cho một nhóm theo mô hình envelope budgeting, dựng để trình diễn các kỹ thuật backend cốt lõi: Authentication, Realtime, Caching, CDN, Messaging/Queue, và DevOps, mỗi phần ở mức *minimal nhưng đúng chuẩn production*.
 
 **License:** MIT · **Kiến trúc:** Modular Monolith · **Nền tảng:** .NET 10 LTS
 
@@ -10,7 +10,7 @@
 
 Project này **không** cố gắng nhiều tính năng. Nó cố gắng cho mỗi khái niệm backend một *vertical slice mỏng nhưng chạy thật, có test, và giải thích được*. Một README giải thích tốt các quyết định kiến trúc có giá trị hơn 50 endpoint CRUD.
 
-Chọn domain tài chính gia đình vì đây là thứ tác giả tự vận hành thật (self-host cho nhà mình), nên có động lực giữ nó đúng và hoàn thiện dần, chứ không phải một domain dựng lên rồi bỏ. Lý do đầy đủ ghi trong [ADR-0006](adr/0006-pivot-sang-tai-chinh-gia-dinh.md).
+Chọn domain ngân sách chia sẻ vì đây là thứ tác giả tự vận hành thật (self-host cho nhóm của mình), nên có động lực giữ nó đúng và hoàn thiện dần, chứ không phải một domain dựng lên rồi bỏ. Lý do đầy đủ ghi trong [ADR-0006](adr/0006-pivot-sang-tai-chinh-chia-se.md).
 
 Ba nguyên tắc xuyên suốt:
 
@@ -54,7 +54,7 @@ Ba nguyên tắc xuyên suốt:
 
 Mô hình: mỗi **module** là một vertical slice tự chứa (Domain + Application + Infrastructure + API endpoints), giao tiếp với nhau **chỉ qua message bus (Wolverine) hoặc public contracts**, không reference trực tiếp internal của nhau. Đây là điều khiến nó "modular" chứ không phải monolith rối.
 
-Aggregate gốc để chia sẻ là **Household**: nó sở hữu Account, Category, Envelope và Transaction, và là ranh giới phân quyền (một user chỉ chạm dữ liệu của hộ mình). Thành viên gắn vào hộ qua **Member** kèm role Owner / Member / Viewer.
+Aggregate gốc để chia sẻ là **Space**: nó sở hữu Account, Category, Envelope và Transaction, và là ranh giới phân quyền (một user chỉ chạm dữ liệu của Space mình). Thành viên gắn vào Space qua **Member** kèm role Owner / Member / Viewer. Space là một nhóm chia sẻ phẳng, không gắn với một loại nhóm cụ thể.
 
 ```text
 finmy/
@@ -80,7 +80,7 @@ finmy/
 │   │   │   └── Finmy.Identity.Api/              # Minimal API endpoints
 │   │   │
 │   │   ├── Budgeting/
-│   │   │   ├── Finmy.Budgeting.Domain/         # Household, Member, Account, Category, Envelope
+│   │   │   ├── Finmy.Budgeting.Domain/         # Space, Member, Account, Category, Envelope
 │   │   │   ├── Finmy.Budgeting.Application/      # CRUD + cache handlers
 │   │   │   ├── Finmy.Budgeting.Infrastructure/   # EF, Redis cache, MinIO
 │   │   │   └── Finmy.Budgeting.Api/
@@ -130,10 +130,10 @@ finmy/
 | Khái niệm | Module | Cách thể hiện (minimal) |
 |-----------|--------|--------------------------|
 | **Authentication** | Identity | JWT + refresh token, role-based authz |
-| **CRUD + DB** | Budgeting | EF Core 10, Household/Account/Category/Envelope, pagination, validation |
+| **CRUD + DB** | Budgeting | EF Core 10, Space/Account/Category/Envelope, pagination, validation |
 | **Caching** | Budgeting | HybridCache cache-aside cho số dư/report + invalidation khi có giao dịch mới |
 | **CDN** | Budgeting | Upload ảnh hóa đơn → MinIO, serve qua cache layer; README mô tả đặt Cloudflare trước origin |
-| **Realtime** | Ledger | SignalR broadcast số dư envelope mới cho mọi thành viên trong hộ |
+| **Realtime** | Ledger | SignalR broadcast số dư envelope mới cho mọi thành viên trong cùng Space |
 | **Queue/Messaging** | Ledger | Wolverine: ghi giao dịch async + outbox + recurring transaction |
 | **Concurrency** | Ledger | Chống chi vượt envelope = optimistic concurrency (rowversion) trên số dư |
 | **Idempotency** | Ledger | Import CSV sao kê, khử trùng lặp theo hash giao dịch |
@@ -157,9 +157,9 @@ Mục tiêu: solution Modular Monolith chạy được với **1 module hoàn ch
 | 3 | Module Identity: `ApplicationUser`/`Role` (Infrastructure) + `RefreshToken` POCO (Domain) + DbContext | Migration Identity chạy |
 | 4 | JWT authentication + refresh token + role-based authorization. Login/Register endpoints | Đăng nhập trả JWT thật |
 | 5 | Global exception handling middleware, `Result<T>` pattern, FluentValidation cho Register | Lỗi trả về chuẩn ProblemDetails |
-| 6-7 | Module Budgeting: CRUD Household / Account / Category / Envelope, pagination, validation. Vài unit test domain | Budgeting API chạy + test xanh |
+| 6-7 | Module Budgeting: CRUD Space / Account / Category / Envelope, pagination, validation. Vài unit test domain | Budgeting API chạy + test xanh |
 
-**Mốc cuối tuần 1:** clone về, `docker compose up`, đăng nhập, tạo hộ và phong bì ngân sách được.
+**Mốc cuối tuần 1:** clone về, `docker compose up`, đăng nhập, tạo Space và phong bì ngân sách được.
 
 ### Tuần 2: Performance & Caching (3-4h/ngày)
 
@@ -183,7 +183,7 @@ Mục tiêu: thể hiện hiểu cache *đúng cách*, không chỉ bật cache.
 
 | Ngày | Việc | Output |
 |------|------|--------|
-| 15 | SignalR Hub: broadcast số dư envelope tới các thành viên đang xem cùng một hộ | Demo realtime trực quan |
+| 15 | SignalR Hub: broadcast số dư envelope tới các thành viên đang xem cùng một Space | Demo realtime trực quan |
 | 16 | Wolverine setup (Dynamic mode dev). Module Ledger domain: Transaction + quy tắc trừ số dư | Wolverine chạy in-process |
 | 17 | API ghi giao dịch → publish command → trả **202 Accepted**. Handler xử lý async | Ghi giao dịch async chạy |
 | 18 | **Transactional outbox** native của Wolverine: ghi Transaction + publish event atomic | Outbox table có message |
@@ -236,6 +236,6 @@ Project coi là xong khi:
 
 ## 8. Câu chuyện kể khi phỏng vấn (chuẩn bị sẵn)
 
-> "Tôi gặp bài toán khi hai thành viên trong nhà cùng chi vào một phong bì ngân sách gần cạn cùng lúc. Nếu mỗi request đọc số dư rồi ghi đè, cả hai đều thấy còn đủ và cùng trừ, phong bì âm quá mức. Tôi thử pessimistic lock, đơn giản nhưng giết throughput. Tôi chuyển sang optimistic concurrency với rowversion của EF Core: ai commit trước thắng, người sau nhận `DbUpdateConcurrencyException` rồi retry trên số dư mới. Tôi kết hợp transactional outbox của Wolverine để ghi giao dịch và publish event cập nhật số dư là atomic, và làm consumer idempotent để message trùng không trừ hai lần. Kết quả demo được: 2 request đồng thời vào phong bì còn đúng một suất → đúng 1 thành công."
+> "Tôi gặp bài toán khi hai thành viên trong cùng một Space cùng chi vào một phong bì ngân sách gần cạn cùng lúc. Nếu mỗi request đọc số dư rồi ghi đè, cả hai đều thấy còn đủ và cùng trừ, phong bì âm quá mức. Tôi thử pessimistic lock, đơn giản nhưng giết throughput. Tôi chuyển sang optimistic concurrency với rowversion của EF Core: ai commit trước thắng, người sau nhận `DbUpdateConcurrencyException` rồi retry trên số dư mới. Tôi kết hợp transactional outbox của Wolverine để ghi giao dịch và publish event cập nhật số dư là atomic, và làm consumer idempotent để message trùng không trừ hai lần. Kết quả demo được: 2 request đồng thời vào phong bì còn đúng một suất → đúng 1 thành công."
 
 Một câu chuyện như vậy giá trị hơn cả danh sách công nghệ.
