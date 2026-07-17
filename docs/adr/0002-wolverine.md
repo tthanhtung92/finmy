@@ -6,7 +6,7 @@ Accepted — 2026-07-12
 
 ## Bối cảnh
 
-Finno cần ba thứ hạ tầng ứng dụng: một mediator để tách endpoint mỏng khỏi handler xử lý, một message bus in-process để publish integration event giữa các module, và một transactional outbox để ghi DB và publish event thành một thao tác atomic. Cái cuối là mấu chốt: bài toán "đinh" của project là anti-overselling ở module Ticketing — đặt vé phải ghi Order và phát `TicketSoldEvent` mà không có khe nào cho hai việc lệch nhau khi crash giữa chừng.
+Finmy cần ba thứ hạ tầng ứng dụng: một mediator để tách endpoint mỏng khỏi handler xử lý, một message bus in-process để publish integration event giữa các module, và một transactional outbox để ghi DB và publish event thành một thao tác atomic. Cái cuối là mấu chốt: bài toán "đinh" của project là anti-overselling ở module Ticketing — đặt vé phải ghi Order và phát `TicketSoldEvent` mà không có khe nào cho hai việc lệch nhau khi crash giữa chừng.
 
 Ràng buộc song song: nhiều thư viện .NET quen thuộc đã chuyển sang license thương mại trong làn sóng 2025, nên lựa chọn phải cân cả tính năng lẫn license (xem thêm [ADR-0003](0003-tranh-thu-vien-thuong-mai.md)).
 
@@ -22,7 +22,7 @@ Ràng buộc song song: nhiều thư viện .NET quen thuộc đã chuyển sang
 
 ## Quyết định
 
-Chúng tôi chọn **Wolverine** làm mediator, message bus in-process, và transactional outbox. Endpoint mỏng gửi command/query qua Wolverine tới handler; integration event trong `Finno.Contracts` publish qua bus; luồng đặt vé Ticketing dùng outbox native của Wolverine để ghi Order và phát event atomic.
+Chúng tôi chọn **Wolverine** làm mediator, message bus in-process, và transactional outbox. Endpoint mỏng gửi command/query qua Wolverine tới handler; integration event trong `Finmy.Contracts` publish qua bus; luồng đặt vé Ticketing dùng outbox native của Wolverine để ghi Order và phát event atomic.
 
 Về codegen: hiện dùng **Dynamic mode** (compile handler bằng Roslyn lúc startup) cho tiện khi dev. Định hướng (chưa làm, dự kiến ở Tuần 4 lúc dựng Docker production image): chuyển sang **Static codegen** để tránh recompile mỗi cold start và tiết kiệm phần RAM Roslyn. Đây mới là dự định, chưa phải quyết định đã chốt.
 

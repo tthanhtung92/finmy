@@ -1,0 +1,26 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="dotnet-tools.json" />
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Bootstrap/">
+    <Project Path="src/Bootstrap/Finmy.Api/Finmy.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/Finmy.Identity.Api/Finmy.Identity.Api.csproj" />
+    <Project Path="src/Modules/Identity/Finmy.Identity.Application/Finmy.Identity.Application.csproj" />
+    <Project Path="src/Modules/Identity/Finmy.Identity.Domain/Finmy.Identity.Domain.csproj" />
+    <Project Path="src/Modules/Identity/Finmy.Identity.Infrastructure/Finmy.Identity.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Finmy.Contracts/Finmy.Contracts.csproj" />
+    <Project Path="src/Shared/Finmy.Modularity/Finmy.Modularity.csproj" />
+    <Project Path="src/Shared/Finmy.SharedKernel/Finmy.SharedKernel.csproj" />
+  </Folder>
+</Solution>

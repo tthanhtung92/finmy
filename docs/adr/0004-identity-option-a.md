@@ -23,9 +23,9 @@ Lối compromise quen thuộc là nhét `ApplicationUser` xuống Domain để A
 
 Chúng tôi chọn **Option A**. Cụ thể:
 
-- `ApplicationUser` / `ApplicationRole` + `IdentityDbContext` + implementation `IdentityService` đặt ở **`Finno.Identity.Infrastructure`** — coi auth là hạ tầng.
-- `RefreshToken` là POCO thuần ở **`Finno.Identity.Domain`**, chỉ giữ `UserId` kiểu `Guid` (id-reference), **không** navigation ngược tới `ApplicationUser`.
-- Interface **`IIdentityService`** đặt ở **`Finno.Identity.Application`** — abstraction đi lên, surface primitive (`string`/`bool`/`Result` + `userId`), không lộ type Identity.
+- `ApplicationUser` / `ApplicationRole` + `IdentityDbContext` + implementation `IdentityService` đặt ở **`Finmy.Identity.Infrastructure`** — coi auth là hạ tầng.
+- `RefreshToken` là POCO thuần ở **`Finmy.Identity.Domain`**, chỉ giữ `UserId` kiểu `Guid` (id-reference), **không** navigation ngược tới `ApplicationUser`.
+- Interface **`IIdentityService`** đặt ở **`Finmy.Identity.Application`** — abstraction đi lên, surface primitive (`string`/`bool`/`Result` + `userId`), không lộ type Identity.
 - Khóa chính kiểu `Guid`: `ApplicationUser : IdentityUser<Guid>`, `ApplicationRole : IdentityRole<Guid>`, context `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>`.
 - Dùng `AddIdentityCore` (không `AddIdentity`) vì auth đi qua JWT, không cần cookie/UI.
 

@@ -6,7 +6,7 @@ Accepted — 2026-07-16
 
 ## Bối cảnh
 
-Finno là project học tập, một người làm, mục tiêu là mỗi khái niệm backend cốt lõi (auth, caching, CDN, realtime, messaging, concurrency) có một vertical slice mỏng nhưng chạy thật và *giải thích được*. Bài toán "đinh" xuyên suốt là chống tranh chấp khi nhiều người cùng ghi lên một tài nguyên khan hiếm — trong domain gốc là chống overselling vé.
+Finmy là project học tập, một người làm, mục tiêu là mỗi khái niệm backend cốt lõi (auth, caching, CDN, realtime, messaging, concurrency) có một vertical slice mỏng nhưng chạy thật và *giải thích được*. Bài toán "đinh" xuyên suốt là chống tranh chấp khi nhiều người cùng ghi lên một tài nguyên khan hiếm — trong domain gốc là chống overselling vé.
 
 Domain gốc là event-ticketing. Vấn đề: đây là một domain tổng hợp mà tác giả không bao giờ vận hành thật. Không có sự kiện nào để bán vé, nên project chỉ dừng ở mức practice dùng một lần rồi bỏ — thiếu cái driver "có người thật vận hành nó" vốn là thứ ép một hệ thống phải đúng và sống lâu. Ngay cả khi dựng thêm UI, sẽ không có ai mở nó ra dùng.
 
@@ -36,7 +36,7 @@ Trong nhánh finance còn hai lựa chọn con:
 
 ## Quyết định
 
-Chúng tôi chuyển domain của Finno sang **Family/Shared Personal Finance theo mô hình envelope budgeting**, với **ledger single-entry**, giữ trọn 8 khái niệm và phạm vi MVP full 8-concept.
+Chúng tôi chuyển domain của Finmy sang **Family/Shared Personal Finance theo mô hình envelope budgeting**, với **ledger single-entry**, giữ trọn 8 khái niệm và phạm vi MVP full 8-concept.
 
 - Aggregate trung tâm là **Household** (root cho việc chia sẻ), sở hữu Account, Category, Envelope và Transaction. **Member** gắn một user vào Household kèm role (Owner / Member / Viewer); ranh giới authorization là user chỉ chạm dữ liệu của Household mình.
 - Bài toán tranh chấp thay cho anti-oversell vé: **chống chi vượt hạn mức một Envelope khi nhiều thành viên chi đồng thời**, dùng optimistic concurrency (rowversion) trên số dư Envelope. Đây là ánh xạ 1-1 của slice concurrency cũ.

@@ -1,4 +1,4 @@
-name: finno
+name: finmy
 
 volumes:
   pgdata:

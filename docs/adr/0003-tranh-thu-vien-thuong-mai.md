@@ -6,7 +6,7 @@ Accepted — 2026-07-12
 
 ## Bối cảnh
 
-Từ tháng 4/2025 trở đi, một loạt thư viện .NET quen thuộc chuyển sang license thương mại: MediatR, AutoMapper, MassTransit, Moq, FluentAssertions. Finno là repo public; ai clone về cũng phải build và chạy được mà không vướng ràng buộc license hay phí.
+Từ tháng 4/2025 trở đi, một loạt thư viện .NET quen thuộc chuyển sang license thương mại: MediatR, AutoMapper, MassTransit, Moq, FluentAssertions. Finmy là repo public; ai clone về cũng phải build và chạy được mà không vướng ràng buộc license hay phí.
 
 MediatR và MassTransit đã được xử lý ở [ADR-0002](0002-wolverine.md) (Wolverine thay cả hai). ADR này chốt phần còn lại: mapping, mocking, assertion.
 

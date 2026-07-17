@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Thư mục này là hồ sơ "vì sao" của Finno: mỗi ADR ghi một quyết định kiến trúc tại thời điểm chốt, kèm bối cảnh và trade-off. ADR là immutable — quyết định đổi thì viết ADR mới và đánh dấu ADR cũ "Superseded", không sửa đè.
+Thư mục này là hồ sơ "vì sao" của Finmy: mỗi ADR ghi một quyết định kiến trúc tại thời điểm chốt, kèm bối cảnh và trade-off. ADR là immutable — quyết định đổi thì viết ADR mới và đánh dấu ADR cũ "Superseded", không sửa đè.
 
 | Số | Tiêu đề | Trạng thái | Ngày |
 |----|---------|------------|------|

@@ -1,4 +1,4 @@
-# Finno: Modular Monolith Backend (.NET 10)
+# Finmy: Modular Monolith Backend (.NET 10)
 
 > Backend quản lý tài chính chung cho gia đình theo mô hình envelope budgeting, dựng để trình diễn các kỹ thuật backend cốt lõi: Authentication, Realtime, Caching, CDN, Messaging/Queue, và DevOps, mỗi phần ở mức *minimal nhưng đúng chuẩn production*.
 
@@ -57,7 +57,7 @@ Mô hình: mỗi **module** là một vertical slice tự chứa (Domain + Appli
 Aggregate gốc để chia sẻ là **Household**: nó sở hữu Account, Category, Envelope và Transaction, và là ranh giới phân quyền (một user chỉ chạm dữ liệu của hộ mình). Thành viên gắn vào hộ qua **Member** kèm role Owner / Member / Viewer.
 
 ```text
-finno/
+finmy/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                      # Build, test, docker push
@@ -66,7 +66,7 @@ finno/
 │   └── docker-compose.override.yml     # cấu hình dev
 ├── src/
 │   ├── Bootstrap/
-│   │   └── Finno.Api/                  # Host duy nhất - composition root
+│   │   └── Finmy.Api/                  # Host duy nhất - composition root
 │   │       ├── Program.cs              # Wire toàn bộ module + middleware
 │   │       ├── Extensions/             # AddModules(), UseModules()
 │   │       ├── Middleware/             # GlobalExceptionHandler
@@ -74,32 +74,32 @@ finno/
 │   │
 │   ├── Modules/
 │   │   ├── Identity/
-│   │   │   ├── Finno.Identity.Domain/          # RefreshToken (POCO thuần, UserId ref)
-│   │   │   ├── Finno.Identity.Application/      # Login/Register handlers, IIdentityService
-│   │   │   ├── Finno.Identity.Infrastructure/   # ApplicationUser/Role, DbContext, JWT + IdentityService
-│   │   │   └── Finno.Identity.Api/              # Minimal API endpoints
+│   │   │   ├── Finmy.Identity.Domain/          # RefreshToken (POCO thuần, UserId ref)
+│   │   │   ├── Finmy.Identity.Application/      # Login/Register handlers, IIdentityService
+│   │   │   ├── Finmy.Identity.Infrastructure/   # ApplicationUser/Role, DbContext, JWT + IdentityService
+│   │   │   └── Finmy.Identity.Api/              # Minimal API endpoints
 │   │   │
 │   │   ├── Budgeting/
-│   │   │   ├── Finno.Budgeting.Domain/         # Household, Member, Account, Category, Envelope
-│   │   │   ├── Finno.Budgeting.Application/      # CRUD + cache handlers
-│   │   │   ├── Finno.Budgeting.Infrastructure/   # EF, Redis cache, MinIO
-│   │   │   └── Finno.Budgeting.Api/
+│   │   │   ├── Finmy.Budgeting.Domain/         # Household, Member, Account, Category, Envelope
+│   │   │   ├── Finmy.Budgeting.Application/      # CRUD + cache handlers
+│   │   │   ├── Finmy.Budgeting.Infrastructure/   # EF, Redis cache, MinIO
+│   │   │   └── Finmy.Budgeting.Api/
 │   │   │
 │   │   └── Ledger/
-│   │       ├── Finno.Ledger.Domain/            # Transaction, quy tắc trừ số dư envelope
-│   │       ├── Finno.Ledger.Application/         # Ghi giao dịch qua Wolverine outbox
-│   │       ├── Finno.Ledger.Infrastructure/      # EF + concurrency handling + import CSV
-│   │       └── Finno.Ledger.Api/
+│   │       ├── Finmy.Ledger.Domain/            # Transaction, quy tắc trừ số dư envelope
+│   │       ├── Finmy.Ledger.Application/         # Ghi giao dịch qua Wolverine outbox
+│   │       ├── Finmy.Ledger.Infrastructure/      # EF + concurrency handling + import CSV
+│   │       └── Finmy.Ledger.Api/
 │   │
 │   └── Shared/
-│       ├── Finno.SharedKernel/         # Result<T>, DomainEvent base, guards
-│       └── Finno.Contracts/            # Integration events (public giữa modules)
+│       ├── Finmy.SharedKernel/         # Result<T>, DomainEvent base, guards
+│       └── Finmy.Contracts/            # Integration events (public giữa modules)
 │                                        # vd: TransactionPostedEvent, EnvelopeOverspentEvent
 │
 ├── tests/
-│   ├── Finno.UnitTests/                # Domain logic, handlers (NSubstitute)
-│   ├── Finno.IntegrationTests/         # Testcontainers: real Postgres+Redis
-│   └── Finno.ArchitectureTests/        # NetArchTest: ép ranh giới module
+│   ├── Finmy.UnitTests/                # Domain logic, handlers (NSubstitute)
+│   ├── Finmy.IntegrationTests/         # Testcontainers: real Postgres+Redis
+│   └── Finmy.ArchitectureTests/        # NetArchTest: ép ranh giới module
 │
 ├── docs/
 │   ├── ROADMAP.md
@@ -112,7 +112,7 @@ finno/
 ├── .editorconfig
 ├── Directory.Build.props                # Version, nullable, treat warnings
 ├── Directory.Packages.props             # Central Package Management
-├── Finno.slnx                           # Solution mới (.slnx format của .NET 10)
+├── Finmy.slnx                           # Solution mới (.slnx format của .NET 10)
 ├── LICENSE                              # MIT
 └── README.md
 ```
@@ -120,7 +120,7 @@ finno/
 ### Quy tắc ranh giới module (rất quan trọng để show)
 
 - Module **không** reference trực tiếp `Domain`/`Infrastructure` của module khác.
-- Giao tiếp cross-module **chỉ qua** `Finno.Contracts` (integration events) publish qua Wolverine.
+- Giao tiếp cross-module **chỉ qua** `Finmy.Contracts` (integration events) publish qua Wolverine.
 - `ArchitectureTests` dùng **NetArchTest** để *fail CI* nếu ai đó vi phạm ranh giới. Đây là bằng chứng cứng cho phỏng vấn viên rằng bạn hiểu modular boundaries.
 
 ---
@@ -152,7 +152,7 @@ Mục tiêu: solution Modular Monolith chạy được với **1 module hoàn ch
 
 | Ngày | Việc | Output |
 |------|------|--------|
-| 1 | Khởi tạo `Finno.slnx`, cấu trúc thư mục, Central Package Management, `Directory.Build.props`, LICENSE (MIT), README khung | Repo public push lên GitHub |
+| 1 | Khởi tạo `Finmy.slnx`, cấu trúc thư mục, Central Package Management, `Directory.Build.props`, LICENSE (MIT), README khung | Repo public push lên GitHub |
 | 2 | Docker Compose: postgres + redis + minio. EF Core 10 + first migration. Setup `AddModules()/UseModules()` pattern | `docker compose up` lên được hạ tầng |
 | 3 | Module Identity: `ApplicationUser`/`Role` (Infrastructure) + `RefreshToken` POCO (Domain) + DbContext | Migration Identity chạy |
 | 4 | JWT authentication + refresh token + role-based authorization. Login/Register endpoints | Đăng nhập trả JWT thật |
