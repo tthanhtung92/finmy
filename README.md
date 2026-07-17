@@ -50,7 +50,7 @@ Domain trước đây của repo là bán vé sự kiện; lý do đổi sang ng
   - Đăng ký, đăng nhập, JWT access token.
   - Refresh token rotation, phát hiện tái sử dụng token đã thu hồi thì revoke toàn bộ chain của user. Token sinh bằng RNG, lưu SHA-256 hash, unique index trên `TokenHash`.
   - Seed role Admin/User và admin mặc định qua `IHostedService`, credential đọc từ config.
-  - Endpoint: `/identity/register`, `/login`, `/refresh`, `/logout`, `/me`, `/admin-only`.
+  - Endpoint (đều dưới prefix `/identity`): `/register`, `/login`, `/refresh`, `/logout`, `/me`, `/admin-only`.
   - Đã qua một vòng security review và siết lại các lỗ hổng tìm thấy.
 - `Result<T>` / `Error` / `ErrorType` ở SharedKernel, `GlobalExceptionHandler` trả ProblemDetails không lộ stack trace, `ValidationFilter<T>` + FluentValidation chặn input rác ngay ở endpoint.
 - Docker Compose cho hạ tầng phụ thuộc: PostgreSQL 17, Redis 8, MinIO.
