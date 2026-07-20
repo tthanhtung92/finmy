@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Finmy.Budgeting.Infrastructure.Persistence;
 
-internal sealed class EnvelopeRepository(BudgetingModuleDbContext dbContext) : IEnvelopeRepository
+internal sealed class EnvelopeRepository(BudgetingDbContext dbContext) : IEnvelopeRepository
 {
     public async Task AddAsync(Envelope envelope, CancellationToken cancellationToken)
     {

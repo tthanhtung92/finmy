@@ -10,3 +10,4 @@ Thư mục này là hồ sơ "vì sao" của Finmy: mỗi ADR ghi một quyết 
 | [0004](0004-identity-option-a.md) | Ranh giới module Identity theo Option A (Dependency Inversion / IIdentityService) | Accepted | 2026-07-12 |
 | [0005](0005-jwt-short-name-claim.md) | Phát JWT bằng short-name claim với IdentityClaimTypes làm source of truth | Accepted | 2026-07-12 |
 | [0006](0006-pivot-sang-tai-chinh-chia-se.md) | Chuyển domain sang ngân sách chia sẻ (shared personal finance) theo envelope budgeting | Accepted | 2026-07-16 |
+| [0007](0007-quy-uoc-dat-ten.md) | Chốt quy ước đặt tên thư mục, file và namespace cho toàn repo | Accepted | 2026-07-20 |

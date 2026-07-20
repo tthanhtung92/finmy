@@ -1,4 +1,4 @@
-using Finmy.Identity.Infrastructure.Identity;
+using Finmy.Identity.Infrastructure.Users;
 using Finmy.Identity.Infrastructure.Options;
 
 using Microsoft.AspNetCore.Identity;

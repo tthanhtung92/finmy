@@ -1,5 +1,5 @@
 using Finmy.Identity.Application.Abstractions;
-using Finmy.Identity.Application.Authentication.Dto;
+using Finmy.Identity.Application.Authentication.Dtos;
 using Finmy.SharedKernel.Results;
 
 namespace Finmy.Identity.Application.Authentication;

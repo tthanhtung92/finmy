@@ -118,6 +118,8 @@ finmy/
 └── README.md
 ```
 
+Cách đặt tên thư mục, file, namespace và class bên trong mỗi project theo [docs/naming-conventions.md](naming-conventions.md) — một bảng quy ước chốt, áp cho mọi module.
+
 ### Quy tắc ranh giới module (rất quan trọng để show)
 
 - Module **không** reference trực tiếp `Domain`/`Infrastructure` của module khác.

@@ -1,6 +1,6 @@
 using System.Text;
 
-using Finmy.Identity.Infrastructure.Identity;
+using Finmy.Identity.Infrastructure.Users;
 using Finmy.Identity.Infrastructure.Authentication;
 using Finmy.Identity.Infrastructure.Persistence;
 
@@ -30,7 +30,7 @@ public static class DependencyInjection
         // Configure Identity
         services.AddIdentityCore<ApplicationUser>()
             .AddRoles<ApplicationRole>()
-            .AddEntityFrameworkStores<IdentityModuleDbContext>()
+            .AddEntityFrameworkStores<IdentityDbContext>()
             .AddSignInManager();
 
         // Configure Options
@@ -58,7 +58,7 @@ public static class DependencyInjection
         {
             throw new InvalidOperationException("Connection string 'IdentityDb' is not configured.");
         }
-        services.AddDbContext<IdentityModuleDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(connectionString));
     }
 
     private static void AddOptions(IServiceCollection services, IConfiguration configuration)

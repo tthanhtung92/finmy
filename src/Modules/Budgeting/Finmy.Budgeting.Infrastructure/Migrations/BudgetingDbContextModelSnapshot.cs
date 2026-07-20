@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Finmy.Budgeting.Infrastructure.Migrations
 {
-    [DbContext(typeof(BudgetingModuleDbContext))]
-    partial class BudgetingModuleDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(BudgetingDbContext))]
+    partial class BudgetingDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

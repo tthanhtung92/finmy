@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Finmy.Budgeting.Infrastructure.Migrations
 {
-    [DbContext(typeof(BudgetingModuleDbContext))]
+    [DbContext(typeof(BudgetingDbContext))]
     [Migration("20260717163611_InitialCreate")]
     partial class InitialCreate
     {

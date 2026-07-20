@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Finmy.Modularity.Interfaces;
+namespace Finmy.Modularity.Abstractions;
 
 public interface IModule
 {

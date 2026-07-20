@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 
 using Finmy.Identity.Application.Abstractions;
-using Finmy.Identity.Domain.Identity;
-using Finmy.Identity.Infrastructure.Identity;
+using Finmy.Identity.Domain.RefreshTokens;
+using Finmy.Identity.Infrastructure.Users;
 using Finmy.Identity.Infrastructure.Options;
 using Finmy.Identity.Infrastructure.Persistence;
 using Finmy.SharedKernel.Results;
@@ -19,7 +19,7 @@ public class IdentityService(
     SignInManager<ApplicationUser> signInManager,
     IPasswordHasher<ApplicationUser> passwordHasher,
     IOptions<JwtOptions> jwtOptionsAccessor,
-    IdentityModuleDbContext dbContext,
+    IdentityDbContext dbContext,
     TimeProvider timeProvider)
     : IIdentityService
 {

@@ -1,8 +1,8 @@
-using Finmy.Identity.Domain.Identity;
+using Finmy.Identity.Domain.RefreshTokens;
 
 using Microsoft.AspNetCore.Identity;
 
-namespace Finmy.Identity.Infrastructure.Identity;
+namespace Finmy.Identity.Infrastructure.Users;
 
 public class ApplicationUser : IdentityUser<Guid>
 {

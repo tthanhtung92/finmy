@@ -3,7 +3,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Finmy.Modularity;
+namespace Finmy.Modularity.Filters;
 
 public sealed class ValidationFilter<T> : IEndpointFilter where T : class
 {

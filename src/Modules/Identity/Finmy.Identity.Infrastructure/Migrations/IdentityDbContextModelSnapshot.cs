@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Finmy.Identity.Infrastructure.Migrations
 {
-    [DbContext(typeof(IdentityModuleDbContext))]
-    partial class IdentityModuleDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(IdentityDbContext))]
+    partial class IdentityDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -23,7 +23,7 @@ namespace Finmy.Identity.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Finmy.Identity.Domain.Identity.RefreshToken", b =>
+            modelBuilder.Entity("Finmy.Identity.Domain.RefreshTokens.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -62,7 +62,7 @@ namespace Finmy.Identity.Infrastructure.Migrations
                     b.ToTable("RefreshTokens", "identity");
                 });
 
-            modelBuilder.Entity("Finmy.Identity.Infrastructure.Identity.ApplicationRole", b =>
+            modelBuilder.Entity("Finmy.Identity.Infrastructure.Users.ApplicationRole", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -89,7 +89,7 @@ namespace Finmy.Identity.Infrastructure.Migrations
                     b.ToTable("AspNetRoles", "identity");
                 });
 
-            modelBuilder.Entity("Finmy.Identity.Infrastructure.Identity.ApplicationUser", b =>
+            modelBuilder.Entity("Finmy.Identity.Infrastructure.Users.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -257,9 +257,9 @@ namespace Finmy.Identity.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", "identity");
                 });
 
-            modelBuilder.Entity("Finmy.Identity.Domain.Identity.RefreshToken", b =>
+            modelBuilder.Entity("Finmy.Identity.Domain.RefreshTokens.RefreshToken", b =>
                 {
-                    b.HasOne("Finmy.Identity.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("Finmy.Identity.Infrastructure.Users.ApplicationUser", null)
                         .WithMany("RefreshTokens")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -268,7 +268,7 @@ namespace Finmy.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
-                    b.HasOne("Finmy.Identity.Infrastructure.Identity.ApplicationRole", null)
+                    b.HasOne("Finmy.Identity.Infrastructure.Users.ApplicationRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -277,7 +277,7 @@ namespace Finmy.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
-                    b.HasOne("Finmy.Identity.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("Finmy.Identity.Infrastructure.Users.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -286,7 +286,7 @@ namespace Finmy.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
                 {
-                    b.HasOne("Finmy.Identity.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("Finmy.Identity.Infrastructure.Users.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -295,13 +295,13 @@ namespace Finmy.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
                 {
-                    b.HasOne("Finmy.Identity.Infrastructure.Identity.ApplicationRole", null)
+                    b.HasOne("Finmy.Identity.Infrastructure.Users.ApplicationRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Finmy.Identity.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("Finmy.Identity.Infrastructure.Users.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -310,14 +310,14 @@ namespace Finmy.Identity.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
                 {
-                    b.HasOne("Finmy.Identity.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("Finmy.Identity.Infrastructure.Users.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Finmy.Identity.Infrastructure.Identity.ApplicationUser", b =>
+            modelBuilder.Entity("Finmy.Identity.Infrastructure.Users.ApplicationUser", b =>
                 {
                     b.Navigation("RefreshTokens");
                 });

@@ -17,7 +17,7 @@ public static class DependencyInjection
 
         services.AddScoped<IEnvelopeRepository, EnvelopeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
-        services.AddScoped<EnvelopesService>();
+        services.AddScoped<EnvelopeService>();
 
         return services;
     }
@@ -29,6 +29,6 @@ public static class DependencyInjection
         {
             throw new InvalidOperationException("Connection string 'BudgetingDb' is not configured.");
         }
-        services.AddDbContext<BudgetingModuleDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<BudgetingDbContext>(options => options.UseNpgsql(connectionString));
     }
 }

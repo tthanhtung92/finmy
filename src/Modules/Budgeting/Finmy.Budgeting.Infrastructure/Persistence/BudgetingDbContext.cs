@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Finmy.Budgeting.Infrastructure.Persistence;
 
-public sealed class BudgetingModuleDbContext(DbContextOptions<BudgetingModuleDbContext> options) : DbContext(options)
+public sealed class BudgetingDbContext(DbContextOptions<BudgetingDbContext> options) : DbContext(options)
 {
     public DbSet<Envelope> Envelopes { get; set; }
     public DbSet<Category> Categories { get; set; }

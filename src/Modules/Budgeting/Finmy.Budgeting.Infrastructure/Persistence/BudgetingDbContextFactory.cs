@@ -4,13 +4,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace Finmy.Budgeting.Infrastructure.Persistence;
 
-public sealed class BudgetingModuleDbContextFactory : IDesignTimeDbContextFactory<BudgetingModuleDbContext>
+public sealed class BudgetingDbContextFactory : IDesignTimeDbContextFactory<BudgetingDbContext>
 {
-    public BudgetingModuleDbContext CreateDbContext(string[] args)
+    public BudgetingDbContext CreateDbContext(string[] args)
     {
         // UserSecretID configure at Finmy.Budgeting.Infrastructure.csproj (<PropertyGroup>)
         var configuration = new ConfigurationBuilder()
-            .AddUserSecrets<BudgetingModuleDbContextFactory>()
+            .AddUserSecrets<BudgetingDbContextFactory>()
             .AddEnvironmentVariables()
             .Build();
 
@@ -21,9 +21,9 @@ public sealed class BudgetingModuleDbContextFactory : IDesignTimeDbContextFactor
             throw new InvalidOperationException("Connection string 'BudgetingDb' is not configured.");
         }
 
-        var optionsBuilder = new DbContextOptionsBuilder<BudgetingModuleDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<BudgetingDbContext>();
         optionsBuilder.UseNpgsql(connectionString);
 
-        return new BudgetingModuleDbContext(optionsBuilder.Options);
+        return new BudgetingDbContext(optionsBuilder.Options);
     }
 }

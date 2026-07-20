@@ -1,7 +1,7 @@
 using Finmy.Identity.Application.Authentication;
-using Finmy.Identity.Application.Authentication.Dto;
-using Finmy.Modularity;
+using Finmy.Identity.Application.Authentication.Dtos;
 using Finmy.Modularity.Extensions;
+using Finmy.Modularity.Filters;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;

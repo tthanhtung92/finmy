@@ -1,7 +1,7 @@
 ﻿using Finmy.Budgeting.Api.Endpoints;
-using Finmy.Budgeting.Application.Envelopes.Dto;
+using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Budgeting.Infrastructure;
-using Finmy.Modularity.Interfaces;
+using Finmy.Modularity.Abstractions;
 
 using FluentValidation;
 

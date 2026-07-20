@@ -1,6 +1,6 @@
 using Finmy.Budgeting.Api;
 using Finmy.Identity.Api;
-using Finmy.Modularity.Interfaces;
+using Finmy.Modularity.Abstractions;
 
 namespace Finmy.Api.Extensions;
 

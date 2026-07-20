@@ -1,11 +1,11 @@
 ﻿using Finmy.Budgeting.Application.Abstractions;
-using Finmy.Budgeting.Application.Envelopes.Dto;
+using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Budgeting.Domain.Envelopes;
 using Finmy.SharedKernel.Results;
 
 namespace Finmy.Budgeting.Application.Envelopes;
 
-public sealed class EnvelopesService(IEnvelopeRepository envelopeRepository, ICategoryRepository categoryRepository)
+public sealed class EnvelopeService(IEnvelopeRepository envelopeRepository, ICategoryRepository categoryRepository)
 {
     public async Task<Result<Guid>> CreateAsync(CreateEnvelopeRequest request, CancellationToken cancellationToken)
     {

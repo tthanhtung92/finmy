@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace Finmy.Identity.Application.Authentication.Dto;
+namespace Finmy.Identity.Application.Authentication.Dtos;
 
 public class RefreshRequestValidator : AbstractValidator<RefreshRequest>
 {

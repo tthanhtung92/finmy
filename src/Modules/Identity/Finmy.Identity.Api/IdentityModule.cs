@@ -1,7 +1,7 @@
 using Finmy.Identity.Api.Endpoints;
-using Finmy.Identity.Application.Authentication.Dto;
+using Finmy.Identity.Application.Authentication.Dtos;
 using Finmy.Identity.Infrastructure;
-using Finmy.Modularity.Interfaces;
+using Finmy.Modularity.Abstractions;
 
 using FluentValidation;
 

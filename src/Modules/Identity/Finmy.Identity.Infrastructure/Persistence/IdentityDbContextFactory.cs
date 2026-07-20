@@ -4,13 +4,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace Finmy.Identity.Infrastructure.Persistence;
 
-public sealed class IdentityModuleDbContextFactory : IDesignTimeDbContextFactory<IdentityModuleDbContext>
+public sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<IdentityDbContext>
 {
-    public IdentityModuleDbContext CreateDbContext(string[] args)
+    public IdentityDbContext CreateDbContext(string[] args)
     {
         // UserSecretID configure at Finmy.Identity.Infrastructure.csproj (<PropertyGroup>)
         var configuration = new ConfigurationBuilder()
-            .AddUserSecrets<IdentityModuleDbContextFactory>()
+            .AddUserSecrets<IdentityDbContextFactory>()
             .AddEnvironmentVariables()
             .Build();
 
@@ -21,9 +21,9 @@ public sealed class IdentityModuleDbContextFactory : IDesignTimeDbContextFactory
             throw new InvalidOperationException("Connection string 'IdentityDb' is not configured.");
         }
 
-        var optionsBuilder = new DbContextOptionsBuilder<IdentityModuleDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<IdentityDbContext>();
         optionsBuilder.UseNpgsql(connectionString);
 
-        return new IdentityModuleDbContext(optionsBuilder.Options);
+        return new IdentityDbContext(optionsBuilder.Options);
     }
 }

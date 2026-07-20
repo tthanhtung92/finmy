@@ -1,12 +1,12 @@
-using Finmy.Identity.Domain.Identity;
-using Finmy.Identity.Infrastructure.Identity;
+using Finmy.Identity.Domain.RefreshTokens;
+using Finmy.Identity.Infrastructure.Users;
 
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Finmy.Identity.Infrastructure.Persistence;
 
-public sealed class IdentityModuleDbContext(DbContextOptions<IdentityModuleDbContext> options) : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
+public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> options) : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>(options)
 {
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 

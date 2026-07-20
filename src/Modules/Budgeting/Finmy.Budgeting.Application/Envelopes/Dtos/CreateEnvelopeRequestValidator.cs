@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace Finmy.Budgeting.Application.Envelopes.Dto;
+namespace Finmy.Budgeting.Application.Envelopes.Dtos;
 
 public class CreateEnvelopeRequestValidator : AbstractValidator<CreateEnvelopeRequest>
 {

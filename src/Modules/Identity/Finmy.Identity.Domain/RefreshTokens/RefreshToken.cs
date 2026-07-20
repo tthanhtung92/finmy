@@ -1,4 +1,4 @@
-namespace Finmy.Identity.Domain.Identity;
+namespace Finmy.Identity.Domain.RefreshTokens;
 
 public class RefreshToken
 {
