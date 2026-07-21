@@ -3,6 +3,8 @@ using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Budgeting.Domain.Envelopes;
 
+using Microsoft.Extensions.Caching.Hybrid;
+
 using NSubstitute;
 
 using Shouldly;
@@ -23,7 +25,8 @@ public class EnvelopeServiceTests
     {
         var envelopeRepo = Substitute.For<IEnvelopeRepository>();
         var categoryRepo = Substitute.For<ICategoryRepository>();
-        var service = new EnvelopeService(envelopeRepo, categoryRepo);
+        var cache = Substitute.For<HybridCache>();
+        var service = new EnvelopeService(envelopeRepo, categoryRepo, cache);
 
         categoryRepo.ExistsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 

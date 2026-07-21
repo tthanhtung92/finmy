@@ -4,20 +4,25 @@ using Finmy.Budgeting.Domain.Envelopes;
 using Finmy.SharedKernel.Pagination;
 using Finmy.SharedKernel.Results;
 
+using Microsoft.Extensions.Caching.Hybrid;
+
 namespace Finmy.Budgeting.Application.Envelopes;
 
-public sealed class EnvelopeService(IEnvelopeRepository envelopeRepository, ICategoryRepository categoryRepository)
+public sealed class EnvelopeService(
+    IEnvelopeRepository envelopeRepository,
+    ICategoryRepository categoryRepository,
+    HybridCache cache)
 {
     public async Task<Result<Guid>> CreateAsync(CreateEnvelopeRequest request, CancellationToken cancellationToken)
     {
         var isCategoryExist = await categoryRepository.ExistsAsync(request.CategoryId, cancellationToken);
 
-        if (!isCategoryExist) 
+        if (!isCategoryExist)
             return EnvelopeErrors.CategoryNotFound(request.CategoryId);
 
         var result = Envelope.Create(request.Name, request.Description, request.CategoryId, request.Allocated, request.PeriodStart, request.PeriodEnd);
 
-        if (result.IsFailure) 
+        if (result.IsFailure)
             return result.Error;
 
         envelopeRepository.Add(result.Value); // Thao tác trong RAM, hứa thêm trước khi SaveChangesAsync
@@ -62,34 +67,45 @@ public sealed class EnvelopeService(IEnvelopeRepository envelopeRepository, ICat
 
     public async Task<PagedResult<EnvelopeResponse>> GetPagedAsync(int page, int pageSize, CancellationToken cancellationToken)
     {
-        var (items, totalCount) = await envelopeRepository.GetPagedAsync(page, pageSize, cancellationToken);
+        var cacheKey = $"envelopes:list:p{page}:s{pageSize}";
 
-        var mappedItems = items
-            .Select(x => new EnvelopeResponse
-            (
-                x.Id,
-                x.Name,
-                x.Description,
-                x.CategoryId,
-                x.Allocated,
-                x.PeriodStartUtc,
-                x.PeriodEndUtc
-            ))
-            .ToList();
+        var result = await cache.GetOrCreateAsync(
+            cacheKey,
+            async cancelToken =>
+            {
+                var (items, totalCount) = await envelopeRepository.GetPagedAsync(page, pageSize, cancelToken);
 
-        return new PagedResult<EnvelopeResponse> (mappedItems, page, pageSize, totalCount);
+                var mappedItems = items
+                   .Select(x => new EnvelopeResponse
+                   (
+                       x.Id,
+                       x.Name,
+                       x.Description,
+                       x.CategoryId,
+                       x.Allocated,
+                       x.PeriodStartUtc,
+                       x.PeriodEndUtc
+                   ))
+                   .ToList();
+
+                return new PagedResult<EnvelopeResponse>(mappedItems, page, pageSize, totalCount);
+            },
+            cancellationToken: cancellationToken
+        );
+
+        return result;
     }
 
     public async Task<Result<EnvelopeResponse>> UpdateAsync(Guid id, UpdateEnvelopeRequest request, CancellationToken cancellationToken)
     {
         var envelope = await envelopeRepository.GetByIdAsync(id, cancellationToken);
-        
+
         if (envelope is null)
             return EnvelopeErrors.NotFound(id);
 
         var isCategoryExists = await categoryRepository.ExistsAsync(request.CategoryId, cancellationToken);
 
-        if (!isCategoryExists) 
+        if (!isCategoryExists)
             return EnvelopeErrors.CategoryNotFound(request.CategoryId);
 
         var updateResult = envelope.Update(request.Name, request.Description, request.CategoryId, request.Allocated, request.PeriodStart, request.PeriodEnd);
