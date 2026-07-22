@@ -32,6 +32,8 @@ public sealed class EnvelopeService(
 
         await envelopeRepository.SaveChangesAsync(cancellationToken);
 
+        await InvalidateAsync(BudgetingCachePolicy.SummaryTagsForPeriod(result.Value.PeriodStartUtc, result.Value.PeriodEndUtc), cancellationToken);
+
         return result.Value.Id;
     }
 
@@ -46,7 +48,52 @@ public sealed class EnvelopeService(
 
         await envelopeRepository.SaveChangesAsync(cancellationToken);
 
+        await InvalidateAsync(BudgetingCachePolicy.SummaryTagsForPeriod(envelope.PeriodStartUtc, envelope.PeriodEndUtc), cancellationToken);
+
         return Result.Success();
+    }
+
+    public async Task<Result<EnvelopeResponse>> UpdateAsync(Guid id, UpdateEnvelopeRequest request, CancellationToken cancellationToken)
+    {
+        var envelope = await envelopeRepository.GetByIdAsync(id, cancellationToken);
+
+        if (envelope is null)
+            return EnvelopeErrors.NotFound(id);
+
+        var isCategoryExists = await categoryRepository.ExistsAsync(request.CategoryId, cancellationToken);
+
+        if (!isCategoryExists)
+            return EnvelopeErrors.CategoryNotFound(request.CategoryId);
+
+        var oldPeriodStart = envelope.PeriodStartUtc;
+        var oldPeriodEnd = envelope.PeriodEndUtc;
+
+        var updateResult = envelope.Update(request.Name, request.Description, request.CategoryId, request.Allocated, request.PeriodStart, request.PeriodEnd);
+
+        if (updateResult.IsFailure)
+            return updateResult.Error;
+
+        await envelopeRepository.SaveChangesAsync(cancellationToken);
+
+        var oldTags = BudgetingCachePolicy.SummaryTagsForPeriod(oldPeriodStart, oldPeriodEnd);
+        var newTags = BudgetingCachePolicy.SummaryTagsForPeriod(envelope.PeriodStartUtc, envelope.PeriodEndUtc);
+
+        //Gộp tag lại, khử trùng lặp bằng HashSet
+        HashSet<string> summaryTags = oldTags.ToHashSet();
+        summaryTags.UnionWith(newTags);
+
+        await InvalidateAsync(summaryTags.ToList(), cancellationToken);
+
+        return new EnvelopeResponse
+        (
+            envelope.Id,
+            envelope.Name,
+            envelope.Description,
+            envelope.CategoryId,
+            envelope.Allocated,
+            envelope.PeriodStartUtc,
+            envelope.PeriodEndUtc
+        );
     }
 
     public async Task<Result<EnvelopeResponse>> GetByIdAsync(Guid id, CancellationToken cancellationToken)
@@ -96,41 +143,11 @@ public sealed class EnvelopeService(
                 return new PagedResult<EnvelopeResponse>(mappedItems, page, pageSize, totalCount);
             },
             options: BudgetingCachePolicy.EnvelopeListEntry,
+            tags: [ BudgetingCachePolicy.EnvelopeListTag ],
             cancellationToken: cancellationToken
         );
 
         return result;
-    }
-
-    public async Task<Result<EnvelopeResponse>> UpdateAsync(Guid id, UpdateEnvelopeRequest request, CancellationToken cancellationToken)
-    {
-        var envelope = await envelopeRepository.GetByIdAsync(id, cancellationToken);
-
-        if (envelope is null)
-            return EnvelopeErrors.NotFound(id);
-
-        var isCategoryExists = await categoryRepository.ExistsAsync(request.CategoryId, cancellationToken);
-
-        if (!isCategoryExists)
-            return EnvelopeErrors.CategoryNotFound(request.CategoryId);
-
-        var updateResult = envelope.Update(request.Name, request.Description, request.CategoryId, request.Allocated, request.PeriodStart, request.PeriodEnd);
-
-        if (updateResult.IsFailure)
-            return updateResult.Error;
-
-        await envelopeRepository.SaveChangesAsync(cancellationToken);
-
-        return new EnvelopeResponse
-        (
-            envelope.Id,
-            envelope.Name,
-            envelope.Description,
-            envelope.CategoryId,
-            envelope.Allocated,
-            envelope.PeriodStartUtc,
-            envelope.PeriodEndUtc
-        );
     }
 
     public async Task<MonthlySummaryResponse> GetMonthlySummaryAsync(int year, int month, CancellationToken cancellationToken)
@@ -154,9 +171,16 @@ public sealed class EnvelopeService(
                 return new MonthlySummaryResponse(year, month, listSummary, grandTotal);
             },
             options: BudgetingCachePolicy.MonthlySummaryEntry,
+            tags: [ BudgetingCachePolicy.SummaryTag(year, month) ],
             cancellationToken: cancellationToken
         );
 
         return result;
+    }
+
+    private ValueTask InvalidateAsync(IReadOnlyList<string> summaryTags, CancellationToken cancellationToken)
+    {
+        string[] tags = [BudgetingCachePolicy.EnvelopeListTag, .. summaryTags];
+        return cache.RemoveByTagAsync(tags, cancellationToken);
     }
 }
