@@ -39,6 +39,7 @@ app.UseStatusCodePages();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseOutputCache();
+app.UseStaticFiles();
 app.UseModules();
 
 if (app.Environment.IsDevelopment())

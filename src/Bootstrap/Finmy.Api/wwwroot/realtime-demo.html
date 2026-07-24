@@ -1,0 +1,344 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Envelope Live Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #171a21;
+            --border: #2a2e38;
+            --text: #e6e8eb;
+            --muted: #8b93a1;
+            --accent: #5b8cff;
+            --ok: #3ecf8e;
+            --warn: #f5a524;
+            --danger: #f2545b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            background: var(--bg);
+            color: var(--text);
+            padding: 24px;
+        }
+
+        h1 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0 0 4px;
+        }
+
+        .sub {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+
+        .status.connected .dot {
+            background: var(--ok);
+        }
+
+        .status.connecting .dot {
+            background: var(--warn);
+        }
+
+        .status.disconnected .dot {
+            background: var(--danger);
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        input[type=text] {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            flex: 1;
+            max-width: 220px;
+        }
+
+        button {
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+            button:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+
+        .panels {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+            .panel h2 {
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: .05em;
+                color: var(--muted);
+                margin: 0 0 12px;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--muted);
+            font-weight: 500;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        tr.deleted {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .empty {
+            color: var(--muted);
+            font-size: 12px;
+            padding: 8px 0;
+        }
+
+        #log {
+            font-size: 12px;
+            max-height: 320px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px dashed var(--border);
+            color: var(--muted);
+        }
+
+            .log-entry .tag {
+                color: var(--accent);
+            }
+
+            .log-entry.del .tag {
+                color: var(--danger);
+            }
+    </style>
+</head>
+<body>
+    <h1>Envelope Live Demo</h1>
+    <div class="sub">Theo dõi trạng thái envelope theo thời gian thực qua SignalR</div>
+
+    <div id="statusBadge" class="status disconnected">
+        <span class="dot"></span>
+        <span id="statusText">Chưa kết nối</span>
+    </div>
+
+    <div class="row">
+        <input type="text" id="envelopeInput" placeholder="Envelope ID" />
+        <button id="watchBtn">Watch envelope</button>
+    </div>
+
+    <div class="panels">
+        <div class="panel">
+            <h2>Envelopes đang theo dõi</h2>
+            <table>
+                <thead>
+                    <tr><th>ID</th><th>Tên</th><th>Đã phân bổ</th><th></th></tr>
+                </thead>
+                <tbody id="envelopeBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty">Chưa theo dõi envelope nào.</div>
+        </div>
+
+        <div class="panel">
+            <h2>Nhật ký sự kiện</h2>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/envelopes")
+            .withAutomaticReconnect()
+            .build();
+
+        // id -> { id, name, allocated, deleted }
+        const envelopes = new Map();
+        // ids we've asked the hub to watch, so we can re-subscribe after a reconnect
+        const watchedIds = new Set();
+
+        const statusBadge = document.getElementById("statusBadge");
+        const statusText = document.getElementById("statusText");
+        const envelopeBody = document.getElementById("envelopeBody");
+        const emptyState = document.getElementById("emptyState");
+        const log = document.getElementById("log");
+        const envelopeInput = document.getElementById("envelopeInput");
+        const watchBtn = document.getElementById("watchBtn");
+
+        function setStatus(state, label) {
+            statusBadge.className = "status " + state;
+            statusText.textContent = label;
+        }
+
+        function addLog(tag, message, isDelete) {
+            const entry = document.createElement("div");
+            entry.className = "log-entry" + (isDelete ? " del" : "");
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="tag">[${tag}]</span> ${time} — ${message}`;
+            log.appendChild(entry);
+        }
+
+        function render() {
+            envelopeBody.innerHTML = "";
+            if (envelopes.size === 0) {
+                emptyState.style.display = "block";
+                return;
+            }
+            emptyState.style.display = "none";
+            for (const state of envelopes.values()) {
+                const tr = document.createElement("tr");
+                if (state.deleted) tr.classList.add("deleted");
+                tr.innerHTML = `
+                        <td>${state.id}</td>
+                        <td>${state.name ?? ""}</td>
+                        <td>${state.allocated ?? ""}</td>
+                        <td>${state.deleted ? "đã xoá" : ""}</td>
+                    `;
+                envelopeBody.appendChild(tr);
+            }
+        }
+
+        connection.on("EnvelopeUpdated", (state) => {
+            // ve lai: state.id, state.name, state.allocated
+            const existing = envelopes.get(state.id) || {};
+            envelopes.set(state.id, { ...existing, ...state, deleted: false });
+            addLog("EnvelopeUpdated", `#${state.id} "${state.name}" — allocated: ${state.allocated}`);
+            render();
+        });
+
+        connection.on("EnvelopeDeleted", (id) => {
+            // danh dau envelope id da bi xoa
+            const existing = envelopes.get(id);
+            if (existing) {
+                existing.deleted = true;
+            } else {
+                envelopes.set(id, { id, deleted: true });
+            }
+            watchedIds.delete(id);
+            addLog("EnvelopeDeleted", `#${id} đã bị xoá`, true);
+            render();
+        });
+
+        connection.onreconnecting(() => {
+            setStatus("connecting", "Đang kết nối lại…");
+        });
+
+        connection.onreconnected(async () => {
+            setStatus("connected", "Đã kết nối");
+            addLog("SignalR", "Kết nối lại thành công, đăng ký lại các envelope đang theo dõi");
+            for (const id of watchedIds) {
+                try {
+                    await connection.invoke("WatchEnvelope", id);
+                } catch (err) {
+                    addLog("Error", `Không thể re-watch #${id}: ${err}`);
+                }
+            }
+        });
+
+        connection.onclose(() => {
+            setStatus("disconnected", "Mất kết nối");
+        });
+
+        async function ensureStarted() {
+            if (connection.state === signalR.HubConnectionState.Disconnected) {
+                setStatus("connecting", "Đang kết nối…");
+                await connection.start();
+                setStatus("connected", "Đã kết nối");
+                addLog("SignalR", "Kết nối thành công");
+            }
+        }
+
+        async function watch(envelopeId) {
+            await ensureStarted();
+            await connection.invoke("WatchEnvelope", envelopeId);
+            watchedIds.add(envelopeId);
+            addLog("SignalR", `Bắt đầu theo dõi envelope #${envelopeId}`);
+        }
+
+        watchBtn.addEventListener("click", async () => {
+            const raw = envelopeInput.value.trim();
+            if (!raw) return;
+            const envelopeId = isNaN(Number(raw)) ? raw : Number(raw);
+            watchBtn.disabled = true;
+            try {
+                await watch(envelopeId);
+                envelopeInput.value = "";
+            } catch (err) {
+                addLog("Error", `Không thể watch #${envelopeId}: ${err}`);
+            } finally {
+                watchBtn.disabled = false;
+            }
+        });
+
+        envelopeInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") watchBtn.click();
+        });
+    </script>
+</body>
+</html>

@@ -29,7 +29,8 @@ public class EnvelopeServiceTests
         var cache = Substitute.For<HybridCache>();
         var logger = Substitute.For<ILogger<EnvelopeService>>();
         var outputCache = Substitute.For<IOutputCacheInvalidator>();
-        var service = new EnvelopeService(envelopeRepo, categoryRepo, cache, logger, outputCache);
+        var realtime = Substitute.For<IEnvelopeRealtimeNotifier>();
+        var service = new EnvelopeService(envelopeRepo, categoryRepo, cache, logger, outputCache, realtime);
 
         categoryRepo.ExistsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 

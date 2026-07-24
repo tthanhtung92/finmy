@@ -1,4 +1,5 @@
-﻿using Finmy.Budgeting.Application.Caching;
+﻿using Finmy.Budgeting.Api.Realtime;
+using Finmy.Budgeting.Application.Caching;
 using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Modularity.Extensions;
@@ -62,5 +63,8 @@ public sealed class EnvelopeEndpoints
             })
             .AddEndpointFilter<ValidationFilter<MonthlySummaryRequest>>()
             .CacheOutput(BudgetingCachePolicy.ReportSummaryOutputPolicy);
+
+        endpoints
+            .MapHub<EnvelopeHub>("/hubs/envelopes");
     }
 }

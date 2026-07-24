@@ -15,7 +15,9 @@ public sealed class EnvelopeService(
     ICategoryRepository categoryRepository,
     HybridCache cache,
     ILogger<EnvelopeService> logger,
-    IOutputCacheInvalidator outputCache)
+    IOutputCacheInvalidator outputCache,
+    IEnvelopeRealtimeNotifier realtime
+    )
 {
     public async Task<Result<Guid>> CreateAsync(CreateEnvelopeRequest request, CancellationToken cancellationToken)
     {
@@ -35,6 +37,8 @@ public sealed class EnvelopeService(
 
         await InvalidateAsync(BudgetingCachePolicy.SummaryTagsForPeriod(result.Value.PeriodStartUtc, result.Value.PeriodEndUtc), cancellationToken);
 
+        await realtime.EnvelopeUpdatedAsync(result.Value.Id, result.Value.Name, result.Value.Allocated, cancellationToken);
+
         return result.Value.Id;
     }
 
@@ -50,6 +54,8 @@ public sealed class EnvelopeService(
         await envelopeRepository.SaveChangesAsync(cancellationToken);
 
         await InvalidateAsync(BudgetingCachePolicy.SummaryTagsForPeriod(envelope.PeriodStartUtc, envelope.PeriodEndUtc), cancellationToken);
+
+        await realtime.EnvelopeDeletedAsync(id, cancellationToken);
 
         return Result.Success();
     }
@@ -84,6 +90,8 @@ public sealed class EnvelopeService(
         summaryTags.UnionWith(newTags);
 
         await InvalidateAsync(summaryTags.ToList(), cancellationToken);
+
+        await realtime.EnvelopeUpdatedAsync(envelope.Id, envelope.Name, envelope.Allocated, cancellationToken);
 
         return new EnvelopeResponse
         (
