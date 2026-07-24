@@ -1,15 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <PackageReference Include="FluentValidation" />
-  </ItemGroup>
-
-  <ItemGroup>
+  <ItemGroup Label="Project References">
     <ProjectReference Include="..\..\..\Shared\Finmy.SharedKernel\Finmy.SharedKernel.csproj" />
     <ProjectReference Include="..\Finmy.Identity.Domain\Finmy.Identity.Domain.csproj" />
   </ItemGroup>
 
-  <PropertyGroup>
-  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
 
 </Project>

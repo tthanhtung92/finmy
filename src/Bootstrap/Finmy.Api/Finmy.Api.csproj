@@ -4,20 +4,26 @@
     <UserSecretsId>2a471e71-84f6-4d13-bdd1-386bb5509270</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup Label="Project References">
+    <ProjectReference Include="..\..\Shared\Finmy.Modularity\Finmy.Modularity.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Finmy.Identity.Api\Finmy.Identity.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Budgeting\Finmy.Budgeting.Api\Finmy.Budgeting.Api.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Scalar.AspNetCore" />
-    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Shared\Finmy.Modularity\Finmy.Modularity.csproj" />
-    <ProjectReference Include="..\..\Modules\Identity\Finmy.Identity.Api\Finmy.Identity.Api.csproj" />
-    <ProjectReference Include="..\..\Modules\Budgeting\Finmy.Budgeting.Api\Finmy.Budgeting.Api.csproj" />
+  <ItemGroup Label="API &amp; OpenAPI">
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup Label="Caching">
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
   </ItemGroup>
 
 </Project>

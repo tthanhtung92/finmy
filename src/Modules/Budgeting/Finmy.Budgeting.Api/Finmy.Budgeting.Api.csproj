@@ -1,17 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
+  <ItemGroup Label="Project References">
     <ProjectReference Include="..\Finmy.Budgeting.Application\Finmy.Budgeting.Application.csproj" />
     <ProjectReference Include="..\Finmy.Budgeting.Infrastructure\Finmy.Budgeting.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Shared\Finmy.Modularity\Finmy.Modularity.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Reference the Microsoft.AspNetCore.App framework to use ASP.NET Core features -->
+  <ItemGroup Label="Reference the Microsoft.AspNetCore.App framework to use ASP.NET Core features">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Label="Validation">
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
   </ItemGroup>
 

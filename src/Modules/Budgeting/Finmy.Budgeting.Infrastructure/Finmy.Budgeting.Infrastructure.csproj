@@ -1,24 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
+  <PropertyGroup>
+    <UserSecretsId>00ffaa70-9a04-4171-a901-3033df665d02</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup Label="Project References">
     <ProjectReference Include="..\Finmy.Budgeting.Application\Finmy.Budgeting.Application.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Label="Entity Framework Core &amp; Database">
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup Label="Configuration">
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
-    <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <UserSecretsId>00ffaa70-9a04-4171-a901-3033df665d02</UserSecretsId>
-  </PropertyGroup>
+  <ItemGroup Label="Storage">
+    <PackageReference Include="AWSSDK.S3" />
+  </ItemGroup>
 
 </Project>

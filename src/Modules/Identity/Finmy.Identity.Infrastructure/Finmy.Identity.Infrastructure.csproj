@@ -1,26 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
+  <PropertyGroup>
+    <UserSecretsId>2a471e71-84f6-4d13-bdd1-386bb5509270</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup Label="Project References">
     <ProjectReference Include="..\Finmy.Identity.Application\Finmy.Identity.Application.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Label="Entity Framework Core &amp; Database">
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
 
+  <ItemGroup Label="Authentication &amp; Identity">
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup Label="Configuration">
     <PackageReference Include="Microsoft.Extensions.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <UserSecretsId>2a471e71-84f6-4d13-bdd1-386bb5509270</UserSecretsId>
-  </PropertyGroup>
 
 </Project>

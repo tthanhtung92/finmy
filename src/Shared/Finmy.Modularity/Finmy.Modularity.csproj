@@ -1,19 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-  </PropertyGroup>
+  <ItemGroup Label="Project References">
+    <ProjectReference Include="..\Finmy.SharedKernel\Finmy.SharedKernel.csproj" />
+  </ItemGroup>
 
-  <ItemGroup>
-    <!-- Reference the Microsoft.AspNetCore.App framework to use ASP.NET Core features -->
+  <ItemGroup Label="Reference the Microsoft.AspNetCore.App framework to use ASP.NET Core features">
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Label="Validation">
     <PackageReference Include="FluentValidation" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Finmy.SharedKernel\Finmy.SharedKernel.csproj" />
   </ItemGroup>
 
 </Project>
