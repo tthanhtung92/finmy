@@ -26,7 +26,6 @@ public class EnvelopeUpdateTests
             PeriodStart,
             PeriodEnd);
 
-        Should.NotThrow(() => result);
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(EnvelopeErrors.NameEmpty);
         envelope.Name.ShouldBe("Groceries");

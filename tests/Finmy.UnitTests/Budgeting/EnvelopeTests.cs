@@ -23,7 +23,6 @@ public class EnvelopeTests
             PeriodStart,
             PeriodEnd);
 
-        Should.NotThrow(() => result);
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(EnvelopeErrors.NameEmpty);
     }
@@ -44,7 +43,6 @@ public class EnvelopeTests
             periodStartUtc,
             periodEndUtc);
 
-        Should.NotThrow(() => result);
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(EnvelopeErrors.PeriodInvalid);
     }
@@ -62,7 +60,6 @@ public class EnvelopeTests
             PeriodStart,
             PeriodEnd);
 
-        Should.NotThrow(() => result);
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(EnvelopeErrors.NameEmpty);
     }
@@ -79,7 +76,6 @@ public class EnvelopeTests
             PeriodStart,
             PeriodEnd);
 
-        Should.NotThrow(() => result);
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(EnvelopeErrors.NameTooLong);
     }
@@ -95,7 +91,6 @@ public class EnvelopeTests
             PeriodStart,
             PeriodEnd);
 
-        Should.NotThrow(() => result);
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(EnvelopeErrors.CategoryRequired);
     }
@@ -113,7 +108,6 @@ public class EnvelopeTests
             PeriodStart,
             PeriodEnd);
 
-        Should.NotThrow(() => result);
         result.IsFailure.ShouldBeTrue();
         result.Error.ShouldBe(EnvelopeErrors.AllocatedNotPositive);
     }
