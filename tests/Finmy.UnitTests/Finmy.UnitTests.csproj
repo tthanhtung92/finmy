@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Application\Finmy.Budgeting.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Domain\Finmy.Budgeting.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ledger\Finmy.Ledger.Domain\Finmy.Ledger.Domain.csproj" />
   </ItemGroup>
 
 </Project>

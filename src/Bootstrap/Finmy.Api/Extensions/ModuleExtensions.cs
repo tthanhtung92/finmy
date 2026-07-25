@@ -1,12 +1,17 @@
 using Finmy.Budgeting.Api;
 using Finmy.Identity.Api;
+using Finmy.Ledger.Api;
 using Finmy.Modularity.Abstractions;
 
 namespace Finmy.Api.Extensions;
 
 public static class ModuleExtensions
 {
-    private static readonly IReadOnlyList<IModule> Modules =  [new IdentityModule(), new BudgetingModule()];
+    private static readonly IReadOnlyList<IModule> Modules =  [
+        new IdentityModule(), 
+        new BudgetingModule(),
+        new LedgerModule()
+    ];
 
     public static void AddModules(this IServiceCollection services, IConfiguration configuration)
     {

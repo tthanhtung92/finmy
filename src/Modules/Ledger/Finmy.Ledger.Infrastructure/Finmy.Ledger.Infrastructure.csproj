@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Finmy.Ledger.Application\Finmy.Ledger.Application.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Finmy.SharedKernel\Finmy.SharedKernel.csproj" />
+    <ProjectReference Include="..\Finmy.Ledger.Domain\Finmy.Ledger.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Label="Messaging">
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+
+</Project>

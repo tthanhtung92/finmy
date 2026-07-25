@@ -24,6 +24,12 @@
     <Project Path="src/Modules/Identity/Finmy.Identity.Domain/Finmy.Identity.Domain.csproj" />
     <Project Path="src/Modules/Identity/Finmy.Identity.Infrastructure/Finmy.Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Ledger/">
+    <Project Path="src/Modules/Ledger/Finmy.Ledger.Api/Finmy.Ledger.Api.csproj" />
+    <Project Path="src/Modules/Ledger/Finmy.Ledger.Application/Finmy.Ledger.Application.csproj" />
+    <Project Path="src/Modules/Ledger/Finmy.Ledger.Domain/Finmy.Ledger.Domain.csproj" />
+    <Project Path="src/Modules/Ledger/Finmy.Ledger.Infrastructure/Finmy.Ledger.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Finmy.Contracts/Finmy.Contracts.csproj" />
     <Project Path="src/Shared/Finmy.Modularity/Finmy.Modularity.csproj" />

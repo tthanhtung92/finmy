@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup Label="Reference the Microsoft.AspNetCore.App framework to use ASP.NET Core features">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\Finmy.Modularity\Finmy.Modularity.csproj" />
+    <ProjectReference Include="..\Finmy.Ledger.Application\Finmy.Ledger.Application.csproj" />
+    <ProjectReference Include="..\Finmy.Ledger.Infrastructure\Finmy.Ledger.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup Label="Project References">
+    <ProjectReference Include="..\..\Modules\Ledger\Finmy.Ledger.Api\Finmy.Ledger.Api.csproj" />
     <ProjectReference Include="..\..\Shared\Finmy.Modularity\Finmy.Modularity.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Finmy.Identity.Api\Finmy.Identity.Api.csproj" />
     <ProjectReference Include="..\..\Modules\Budgeting\Finmy.Budgeting.Api\Finmy.Budgeting.Api.csproj" />
@@ -24,6 +25,14 @@
   <ItemGroup Label="Caching">
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
     <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+  </ItemGroup>
+
+  <ItemGroup Label="Messaging">
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 
 </Project>

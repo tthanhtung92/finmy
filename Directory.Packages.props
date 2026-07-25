@@ -36,6 +36,11 @@
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.10" />
   </ItemGroup>
 
+  <ItemGroup Label="Messaging">
+    <PackageVersion Include="WolverineFx" Version="6.22.0" />
+    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.22.0" />
+  </ItemGroup>
+
   <ItemGroup Label="Validation">
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
