@@ -13,6 +13,24 @@ public sealed class Envelope
     public DateTimeOffset PeriodStartUtc { get; private set; }
     public DateTimeOffset PeriodEndUtc { get; private set; }
 
+    private Envelope()
+    {
+    }
+
+    private Envelope(
+        Guid id, string name, string? description,
+        Guid categoryId, decimal allocated,
+        DateTimeOffset periodStart, DateTimeOffset periodEnd)
+    {
+        Id = id;
+        Name = name;
+        Description = description;
+        CategoryId = categoryId;
+        Allocated = allocated;
+        PeriodStartUtc = periodStart;
+        PeriodEndUtc = periodEnd;
+    }
+
     public static Result<Envelope> Create(
         string name, string? description,
         Guid categoryId, decimal allocated,
@@ -29,15 +47,15 @@ public sealed class Envelope
         }
 
         return new Envelope
-        {
-            Id = Guid.CreateVersion7(),
-            Name = name.Trim(),
-            Description = description?.TrimOrNull(),
-            CategoryId = categoryId,
-            Allocated = allocated,
-            PeriodStartUtc = periodStart,
-            PeriodEndUtc = periodEnd
-        };
+        (
+            Guid.CreateVersion7(),
+            name.Trim(),
+            description?.TrimOrNull(),
+            categoryId,
+            allocated,
+            periodStart,
+            periodEnd
+        );
     }
 
     public Result Update(
