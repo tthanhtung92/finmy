@@ -4,6 +4,11 @@ namespace Finmy.Ledger.Domain.Transactions;
 
 public static class TransactionErrors
 {
+    public static readonly Error TransactionIdRequired = new(
+        "Ledger.TransactionIdRequired",
+        "Transaction must have a non-empty identifier.",
+        ErrorType.Validation);
+
     public static readonly Error AmountNotPositive = new(
         "Ledger.AmountNotPositive",
         "Transaction amount must be greater than zero.",
@@ -23,6 +28,11 @@ public static class TransactionErrors
         "Ledger.DirectionInvalid",
         "Transaction direction is invalid.",
         ErrorType.Validation);
+
+    public static readonly Error ErrorInvalid = new(
+        "Ledger.ErrorInvalid",
+        "Transaction snapshot's Error is invalid.",
+        ErrorType.Failure);
 
     public static Error NotFound(Guid transactionId)
     {

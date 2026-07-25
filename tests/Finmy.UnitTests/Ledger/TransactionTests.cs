@@ -6,6 +6,7 @@ namespace Finmy.UnitTests.Ledger;
 
 public class TransactionTests
 {
+    private static readonly Guid TransactionId = Guid.CreateVersion7();
     private static readonly Guid SpaceId = Guid.CreateVersion7();
     private static readonly Guid EnvelopeId = Guid.CreateVersion7();
     private static readonly DateTimeOffset OccurredOn = new(2026, 1, 15, 10, 30, 0, TimeSpan.Zero);
@@ -14,6 +15,7 @@ public class TransactionTests
     public void Create_WithValidData_ReturnsSuccess()
     {
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             EnvelopeId,
             250m,
@@ -30,9 +32,10 @@ public class TransactionTests
     }
 
     [Fact]
-    public void Create_WithValidData_GeneratesNonEmptyId()
+    public void Create_WithValidData_KeepsProvidedId()
     {
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             EnvelopeId,
             250m,
@@ -42,6 +45,23 @@ public class TransactionTests
 
         result.IsFailure.ShouldBeFalse();
         result.Value.Id.ShouldNotBe(Guid.Empty);
+        result.Value.Id.ShouldBe(TransactionId);
+    }
+
+    [Fact]
+    public void Create_WithEmptyId_ReturnsFailureWithoutThrowing()
+    {
+        var result = Transaction.Create(
+            Guid.Empty,
+            SpaceId,
+            EnvelopeId,
+            250m,
+            TransactionDirection.Expense,
+            OccurredOn,
+            "Groceries");
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(TransactionErrors.TransactionIdRequired);
     }
 
     [Fact]
@@ -50,6 +70,7 @@ public class TransactionTests
         var localOccurredOn = new DateTimeOffset(2026, 1, 15, 10, 30, 0, TimeSpan.FromHours(7));
 
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             EnvelopeId,
             250m,
@@ -69,6 +90,7 @@ public class TransactionTests
     public void Create_WithEmptyDescription_ReturnsNullDescription(string? description)
     {
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             EnvelopeId,
             250m,
@@ -84,6 +106,7 @@ public class TransactionTests
     public void Create_WithPaddedDescription_TrimsDescription()
     {
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             EnvelopeId,
             250m,
@@ -101,6 +124,7 @@ public class TransactionTests
     public void Create_WithInvalidAmount_ReturnsFailureWithoutThrowing(decimal amount)
     {
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             EnvelopeId,
             amount,
@@ -116,6 +140,7 @@ public class TransactionTests
     public void Create_WithEmptySpaceId_ReturnsFailureWithoutThrowing()
     {
         var result = Transaction.Create(
+            TransactionId,
             Guid.Empty,
             EnvelopeId,
             250m,
@@ -131,6 +156,7 @@ public class TransactionTests
     public void Create_WithEmptyEnvelopeId_ReturnsFailureWithoutThrowing()
     {
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             Guid.Empty,
             250m,
@@ -148,6 +174,7 @@ public class TransactionTests
         var invalidDirection = (TransactionDirection)999;
 
         var result = Transaction.Create(
+            TransactionId,
             SpaceId,
             EnvelopeId,
             250m,

@@ -4,4 +4,8 @@
     <ProjectReference Include="..\Finmy.Ledger.Application\Finmy.Ledger.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup Label="Configuration">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
 </Project>

@@ -42,10 +42,7 @@ builder.Services.CritterStackDefaults(x =>
     x.Development.GeneratedCodeMode = TypeLoadMode.Dynamic;
 });
 
-builder.Host.UseWolverine(options =>
-{
-    options.Policies.AllLocalQueues(x => x.ProcessInline());
-});
+builder.Host.UseWolverine();
 
 var app = builder.Build();
 

@@ -5,6 +5,14 @@
     <ProjectReference Include="..\Finmy.Ledger.Domain\Finmy.Ledger.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup Label="Configuration">
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup Label="Validation">
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
   <ItemGroup Label="Messaging">
     <PackageReference Include="WolverineFx" />
   </ItemGroup>

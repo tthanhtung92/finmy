@@ -10,4 +10,12 @@
     <ProjectReference Include="..\Finmy.Ledger.Infrastructure\Finmy.Ledger.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup Label="Messaging">
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+
+  <ItemGroup Label="Validation">
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+
 </Project>

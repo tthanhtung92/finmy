@@ -34,13 +34,13 @@ public sealed class Transaction
     }
 
     public static Result<Transaction> Create(
-        Guid spaceId, Guid envelopeId,
+        Guid id, Guid spaceId, Guid envelopeId,
         decimal amount, TransactionDirection direction,
         DateTimeOffset occurredOn, string? description)
     {
         occurredOn = occurredOn.ToUniversalTime();
 
-        var validateResult = Validate(spaceId, envelopeId, amount, direction);
+        var validateResult = Validate(id, spaceId, envelopeId, amount, direction);
 
         if (validateResult.IsFailure)
         {
@@ -49,7 +49,7 @@ public sealed class Transaction
 
         return new Transaction
         (
-            Guid.CreateVersion7(),
+            id,
             spaceId,
             envelopeId,
             amount,
@@ -60,9 +60,12 @@ public sealed class Transaction
     }
 
     private static Result Validate(
-        Guid spaceId, Guid envelopeId, 
+        Guid id, Guid spaceId, Guid envelopeId, 
         decimal amount, TransactionDirection direction)
     {
+        if (id == Guid.Empty)
+            return Result.Failure(TransactionErrors.TransactionIdRequired);
+
         if (spaceId == Guid.Empty)
             return Result.Failure(TransactionErrors.SpaceRequired);
 
