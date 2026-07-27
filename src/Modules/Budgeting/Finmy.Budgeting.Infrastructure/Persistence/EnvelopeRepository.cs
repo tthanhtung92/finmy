@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Finmy.Budgeting.Infrastructure.Persistence;
 
-internal sealed class EnvelopeRepository(BudgetingDbContext dbContext) : IEnvelopeRepository
+public sealed class EnvelopeRepository(BudgetingDbContext dbContext) : IEnvelopeRepository
 {
     public void Add(Envelope envelope)
     {

@@ -10,7 +10,10 @@ using Finmy.Budgeting.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+
+using Wolverine.EntityFrameworkCore;
 
 namespace Finmy.Budgeting.Infrastructure;
 
@@ -49,6 +52,7 @@ public static class DependencyInjection
             return new AmazonS3Client(new BasicAWSCredentials(options.AccessKey, options.SecretKey), config);
         });
         services.AddSingleton<IReceiptStorage, S3ReceiptStorage>();
+        services.TryAddSingleton(TimeProvider.System);
 
         // AddScoped
         services.AddScoped<IEnvelopeRepository, EnvelopeRepository>();
@@ -70,7 +74,7 @@ public static class DependencyInjection
         {
             throw new InvalidOperationException("Connection string 'BudgetingDb' is not configured.");
         }
-        services.AddDbContext<BudgetingDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContextWithWolverineIntegration<BudgetingDbContext>(options => options.UseNpgsql(connectionString));
     }
 
     private static void AddOptions(IServiceCollection services, IConfiguration configuration)

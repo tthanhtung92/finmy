@@ -27,4 +27,8 @@
     <PackageReference Include="AWSSDK.S3" />
   </ItemGroup>
 
+  <ItemGroup Label="Messaging">
+    <PackageReference Include="WolverineFx.EntityFrameworkCore" />
+  </ItemGroup>
+
 </Project>

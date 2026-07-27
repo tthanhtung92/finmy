@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup Label="Project References">
+    <ProjectReference Include="..\..\..\Shared\Finmy.Contracts\Finmy.Contracts.csproj" />
     <ProjectReference Include="..\Finmy.Budgeting.Domain\Finmy.Budgeting.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\Finmy.SharedKernel\Finmy.SharedKernel.csproj" />
   </ItemGroup>
@@ -11,6 +12,10 @@
 
   <ItemGroup Label="Caching">
     <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+  </ItemGroup>
+
+  <ItemGroup Label="Messaging">
+    <PackageReference Include="WolverineFx" />
   </ItemGroup>
 
 </Project>

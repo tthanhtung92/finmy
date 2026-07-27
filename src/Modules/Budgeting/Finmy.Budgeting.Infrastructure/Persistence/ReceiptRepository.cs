@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Finmy.Budgeting.Infrastructure.Persistence;
 
-internal sealed class ReceiptRepository(BudgetingDbContext dbContext) : IReceiptRepository
+public sealed class ReceiptRepository(BudgetingDbContext dbContext) : IReceiptRepository
 {
     public void Add(Receipt receipt)
     {
