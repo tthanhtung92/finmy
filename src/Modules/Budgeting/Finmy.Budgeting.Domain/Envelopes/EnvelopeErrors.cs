@@ -44,4 +44,24 @@ public static class EnvelopeErrors
             $"Category with Id '{categoryId}' was not found.",
             ErrorType.Validation);
     }
+
+    public static readonly Error SpendAmountNotPositive = new(
+        "Budgeting.SpendAmountNotPositive",
+        "The spent amount must be greater than zero.",
+        ErrorType.Validation);
+
+    public static readonly Error InsufficientFunds = new(
+        "Budgeting.InsufficientFunds",
+        "The remaining envelope balance is insufficient for this transaction.",
+        ErrorType.Conflict);
+
+    public static readonly Error RefundExceedsSpent = new(
+        "Budgeting.RefundExceedsSpent",
+        "The refund amount cannot exceed the total amount spent.",
+        ErrorType.Conflict);
+
+    public static readonly Error AllocatedBelowSpent = new(
+        "Budgeting.AllocatedBelowSpent",
+        "The newly allocated amount cannot be less than the amount already spent.",
+        ErrorType.Conflict);
 }
