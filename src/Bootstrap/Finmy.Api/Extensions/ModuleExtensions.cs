@@ -3,6 +3,8 @@ using Finmy.Identity.Api;
 using Finmy.Ledger.Api;
 using Finmy.Modularity.Abstractions;
 
+using Wolverine;
+
 namespace Finmy.Api.Extensions;
 
 public static class ModuleExtensions
@@ -26,6 +28,14 @@ public static class ModuleExtensions
         foreach (var module in Modules)
         {
             module.MapEndpoints(endpoints);
+        }
+    }
+
+    public static void ConfigureWolverine(this WolverineOptions options, IConfiguration configuration)
+    {
+        foreach (var module in Modules)
+        {
+            module.ConfigureWolverine(options, configuration);
         }
     }
 }

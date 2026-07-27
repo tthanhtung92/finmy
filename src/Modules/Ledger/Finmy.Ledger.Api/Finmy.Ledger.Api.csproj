@@ -12,6 +12,7 @@
 
   <ItemGroup Label="Messaging">
     <PackageReference Include="WolverineFx" />
+    <PackageReference Include="WolverineFx.Postgresql" />
   </ItemGroup>
 
   <ItemGroup Label="Validation">

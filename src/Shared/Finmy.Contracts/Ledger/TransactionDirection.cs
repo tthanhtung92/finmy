@@ -1,4 +1,4 @@
-﻿namespace Finmy.Ledger.Domain.Transactions;
+﻿namespace Finmy.Contracts.Ledger;
 
 public enum TransactionDirection
 {

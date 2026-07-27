@@ -40,6 +40,8 @@
 
   <ItemGroup Label="Messaging">
     <PackageVersion Include="WolverineFx" Version="6.22.0" />
+    <PackageVersion Include="WolverineFx.Postgresql" Version="6.22.0" />
+    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.22.0" />
     <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.22.0" />
   </ItemGroup>
 

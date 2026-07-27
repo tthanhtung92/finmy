@@ -27,9 +27,9 @@ public sealed class BudgetingModule : IModule
         // Output Caching
         services.AddOutputCache(options =>
         {
-            options.AddPolicy(BudgetingCachePolicy.ReportSummaryOutputPolicy, policy 
+            options.AddPolicy(BudgetingCachePolicy.ReportSummaryOutputPolicy, policy
                 => policy.Expire(TimeSpan.FromSeconds(60)).SetVaryByQuery("year", "month").Tag(BudgetingCachePolicy.OutputSummaryTag));
-            options.AddPolicy(BudgetingCachePolicy.EnvelopeListOutputPolicy, policy 
+            options.AddPolicy(BudgetingCachePolicy.EnvelopeListOutputPolicy, policy
                 => policy.Expire(TimeSpan.FromSeconds(60)).SetVaryByQuery("page", "pageSize").Tag(BudgetingCachePolicy.OutputListTag));
         });
 

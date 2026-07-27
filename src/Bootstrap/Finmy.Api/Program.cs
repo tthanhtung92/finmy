@@ -6,6 +6,7 @@ using JasperFx.CodeGeneration;
 
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Options;
 
 using Scalar.AspNetCore;
 
@@ -42,7 +43,12 @@ builder.Services.CritterStackDefaults(x =>
     x.Development.GeneratedCodeMode = TypeLoadMode.Dynamic;
 });
 
-builder.Host.UseWolverine();
+builder.Host.UseWolverine(opts => 
+{
+    opts.ConfigureWolverine(builder.Configuration);
+    opts.Policies.AutoApplyTransactions();
+    opts.Policies.UseDurableLocalQueues();
+});
 
 var app = builder.Build();
 
