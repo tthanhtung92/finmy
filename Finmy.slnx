@@ -37,5 +37,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Finmy.UnitTests/Finmy.UnitTests.csproj" />
+    <Project Path="tests/Finmy.IntegrationTests/Finmy.IntegrationTests.csproj" />
   </Folder>
 </Solution>
