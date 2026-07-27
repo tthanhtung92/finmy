@@ -15,14 +15,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
         base.OnModelCreating(builder);
         builder.HasDefaultSchema("identity");
 
-        builder.Entity<ApplicationUser>()
-            .HasMany(u => u.RefreshTokens)
-            .WithOne()
-            .HasForeignKey(rt => rt.UserId)
-            .IsRequired();
+        builder.Entity<RefreshToken>().HasIndex(rt => rt.TokenHash).IsUnique();
 
-        builder.Entity<RefreshToken>()
-            .HasIndex(rt => rt.TokenHash)
-            .IsUnique();
+        builder.Entity<ApplicationUser>().HasMany(u => u.RefreshTokens).WithOne().HasForeignKey(rt => rt.UserId).IsRequired();
     }
 }
