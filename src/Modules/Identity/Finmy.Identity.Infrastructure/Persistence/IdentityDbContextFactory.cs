@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 
 namespace Finmy.Identity.Infrastructure.Persistence;
@@ -22,7 +23,10 @@ public sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<Ident
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<IdentityDbContext>();
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(
+            connectionString,
+            x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "identity")
+        );
 
         return new IdentityDbContext(optionsBuilder.Options);
     }

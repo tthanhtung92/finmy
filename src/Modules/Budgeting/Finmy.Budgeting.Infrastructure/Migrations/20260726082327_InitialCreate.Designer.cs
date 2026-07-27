@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Finmy.Budgeting.Infrastructure.Migrations
 {
     [DbContext(typeof(BudgetingDbContext))]
-    [Migration("20260720152155_AddEnvelopeCategoryForeignKey")]
-    partial class AddEnvelopeCategoryForeignKey
+    [Migration("20260726082327_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -21,7 +21,7 @@ namespace Finmy.Budgeting.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("budgeting")
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -48,12 +48,7 @@ namespace Finmy.Budgeting.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Name = "Ăn uống"
-                        },
-                        new
-                        {
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Name = "Nhà cửa"
+                            Name = "Essentials"
                         });
                 });
 
@@ -89,6 +84,40 @@ namespace Finmy.Budgeting.Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.ToTable("Envelopes", "budgeting");
+                });
+
+            modelBuilder.Entity("Finmy.Budgeting.Domain.Receipts.Receipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OriginalFileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("UploadedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique();
+
+                    b.ToTable("Receipts", "budgeting");
                 });
 
             modelBuilder.Entity("Finmy.Budgeting.Domain.Envelopes.Envelope", b =>

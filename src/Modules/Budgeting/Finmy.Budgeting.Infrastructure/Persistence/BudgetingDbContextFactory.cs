@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 
 namespace Finmy.Budgeting.Infrastructure.Persistence;
@@ -22,7 +23,10 @@ public sealed class BudgetingDbContextFactory : IDesignTimeDbContextFactory<Budg
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<BudgetingDbContext>();
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(
+            connectionString,
+            x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "budgeting")
+        );
 
         return new BudgetingDbContext(optionsBuilder.Options);
     }
