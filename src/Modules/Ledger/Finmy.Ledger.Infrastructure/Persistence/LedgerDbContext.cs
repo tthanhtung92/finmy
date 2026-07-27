@@ -13,18 +13,10 @@ public sealed class LedgerDbContext(DbContextOptions<LedgerDbContext> options) :
         base.OnModelCreating(builder);
         builder.HasDefaultSchema("ledger");
 
-        builder.Entity<Transaction>()
-            .Property(x => x.Amount)
-            .HasPrecision(18, 2);
+        builder.Entity<Transaction>().Property(x => x.Amount).HasPrecision(18, 2);
+        builder.Entity<Transaction>().Property(x => x.Description).HasMaxLength(500);
 
-        builder.Entity<Transaction>()
-            .Property(x => x.Description)
-            .HasMaxLength(500);
-
-        builder.Entity<Transaction>()
-            .HasIndex(x => x.EnvelopeId);
-
-        builder.Entity<Transaction>()
-            .HasIndex(x => x.SpaceId);
+        builder.Entity<Transaction>().HasIndex(x => x.EnvelopeId);
+        builder.Entity<Transaction>().HasIndex(x => x.SpaceId);
     }
 }

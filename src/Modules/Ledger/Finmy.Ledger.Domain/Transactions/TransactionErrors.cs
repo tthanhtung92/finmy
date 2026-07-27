@@ -41,4 +41,17 @@ public static class TransactionErrors
             $"Transaction with Id '{transactionId}' was not found.",
             ErrorType.NotFound);
     }
+
+    public static readonly Error AlreadyReversed = new(
+        "Ledger.AlreadyReversed",
+        "Transaction already reversed.",
+        ErrorType.Conflict);
+
+    public static Error Overspent(decimal attemptedAmount, decimal remaining)
+    {
+        return new(
+            "Ledger.Overspent",
+            $"Cannot spend {attemptedAmount:C}. Only {remaining:C} is remaining.",
+            ErrorType.Conflict);
+    }
 }

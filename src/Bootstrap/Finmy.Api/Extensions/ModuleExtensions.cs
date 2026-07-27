@@ -9,8 +9,8 @@ namespace Finmy.Api.Extensions;
 
 public static class ModuleExtensions
 {
-    private static readonly IReadOnlyList<IModule> Modules =  [
-        new IdentityModule(), 
+    private static readonly IReadOnlyList<IModule> Modules = [
+        new IdentityModule(),
         new BudgetingModule(),
         new LedgerModule()
     ];
@@ -28,14 +28,6 @@ public static class ModuleExtensions
         foreach (var module in Modules)
         {
             module.MapEndpoints(endpoints);
-        }
-    }
-
-    public static void ConfigureWolverine(this WolverineOptions options, IConfiguration configuration)
-    {
-        foreach (var module in Modules)
-        {
-            module.ConfigureWolverine(options, configuration);
         }
     }
 }

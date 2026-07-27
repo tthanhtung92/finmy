@@ -10,5 +10,4 @@ public interface IModule
 {
     void ConfigureServices(IServiceCollection services, IConfiguration configuration);
     void MapEndpoints(IEndpointRouteBuilder endpoints);
-    void ConfigureWolverine(WolverineOptions options, IConfiguration configuration) { }
 }

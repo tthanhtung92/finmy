@@ -3,14 +3,17 @@ using Finmy.Api.Middleware;
 
 using JasperFx;
 using JasperFx.CodeGeneration;
+using JasperFx.Core;
 
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Options;
 
 using Scalar.AspNetCore;
 
 using Wolverine;
+using Wolverine.ErrorHandling;
+using Wolverine.Postgresql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,11 +46,15 @@ builder.Services.CritterStackDefaults(x =>
     x.Development.GeneratedCodeMode = TypeLoadMode.Dynamic;
 });
 
-builder.Host.UseWolverine(opts => 
+builder.Host.UseWolverine(opts =>
 {
-    opts.ConfigureWolverine(builder.Configuration);
+    var connectionString = builder.Configuration.GetConnectionString("LedgerDb");
+    opts.PersistMessagesWithPostgresql(connectionString!, "wolverine");
     opts.Policies.AutoApplyTransactions();
     opts.Policies.UseDurableLocalQueues();
+    opts.Policies.OnException<DbUpdateConcurrencyException>()
+        .RetryWithCooldown(100.Milliseconds(), 250.Milliseconds(), 500.Milliseconds())
+        .Then.MoveToErrorQueue();
 });
 
 var app = builder.Build();

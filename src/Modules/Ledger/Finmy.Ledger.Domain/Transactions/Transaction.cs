@@ -12,6 +12,8 @@ public sealed class Transaction
     public TransactionDirection Direction { get; private set; }
     public DateTimeOffset OccurredOnUtc { get; private set; }
     public string? Description { get; private set; }
+    public TransactionState State { get; private set; }
+    public DateTimeOffset? ReversedAtUtc { get; private set; }
 
     // Constructor rỗng cho EF Core (materialization qua reflection)
     private Transaction()
@@ -31,6 +33,8 @@ public sealed class Transaction
         Direction = direction;
         OccurredOnUtc = occurredOnUtc;
         Description = description;
+        State = TransactionState.Posted;
+        ReversedAtUtc = null;
     }
 
     public static Result<Transaction> Create(
@@ -60,7 +64,7 @@ public sealed class Transaction
     }
 
     private static Result Validate(
-        Guid id, Guid spaceId, Guid envelopeId, 
+        Guid id, Guid spaceId, Guid envelopeId,
         decimal amount, TransactionDirection direction)
     {
         if (id == Guid.Empty)
@@ -77,6 +81,17 @@ public sealed class Transaction
 
         if (!Enum.IsDefined(direction))
             return Result.Failure(TransactionErrors.DirectionInvalid);
+
+        return Result.Success();
+    }
+
+    public Result Reverse(DateTimeOffset reversedAtUtc)
+    {
+        if (State == TransactionState.Reversed)
+            return TransactionErrors.AlreadyReversed;
+
+        State = TransactionState.Reversed;
+        ReversedAtUtc = reversedAtUtc.ToUniversalTime();
 
         return Result.Success();
     }
