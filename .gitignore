@@ -483,6 +483,7 @@ $RECYCLE.BIN/
 
 # Claude
 CLAUDE.md
+CLAUDE.local.md
 .claude/
 
 # Obsidian
