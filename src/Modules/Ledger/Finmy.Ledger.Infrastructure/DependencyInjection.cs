@@ -18,7 +18,7 @@ public static class DependencyInjection
         AddDbContext(services, configuration);
 
         // AddSingleton
-        services.AddSingleton<ITransactionStatusStore, InMemoryTransactionStatusStore>();
+        services.AddSingleton<ITransactionRequestStatusStore, InMemoryTransactionStatusStore>();
         services.TryAddSingleton(TimeProvider.System);
 
         // AddScoped

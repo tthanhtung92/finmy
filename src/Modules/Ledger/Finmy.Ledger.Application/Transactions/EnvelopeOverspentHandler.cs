@@ -8,7 +8,7 @@ namespace Finmy.Ledger.Application.Transactions;
 
 public sealed class EnvelopeOverspentHandler(
     ITransactionRepository repository,
-    ITransactionStatusStore statusStore,
+    ITransactionRequestStatusStore statusStore,
     TimeProvider timeProvider,
     ILogger<EnvelopeOverspentHandler> logger)
 {
@@ -24,13 +24,13 @@ public sealed class EnvelopeOverspentHandler(
 
         var result = transaction.Reverse(timeProvider.GetUtcNow());
 
+        await statusStore.MarkFailedAsync(message.TransactionId, TransactionErrors.Overspent(message.AttemptedAmount, message.Remaining), cancellationToken);
+        logger.LogWarning("Transaction with Id '{TransactionId}' failed.", message.TransactionId);
+
         if (result.IsFailure)
         {
             logger.LogInformation("Transaction with Id '{TransactionId}' can not reverse: '{ErrorCode}'.", message.TransactionId, result.Error.Code);
             return;
         }
-
-        await statusStore.MarkFailedAsync(message.TransactionId, TransactionErrors.Overspent(message.AttemptedAmount, message.Remaining), cancellationToken);
-        logger.LogWarning("Transaction with Id '{TransactionId}' failed.", message.TransactionId);
     }
 }

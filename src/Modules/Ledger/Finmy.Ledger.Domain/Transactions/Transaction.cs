@@ -14,6 +14,7 @@ public sealed class Transaction
     public string? Description { get; private set; }
     public TransactionState State { get; private set; }
     public DateTimeOffset? ReversedAtUtc { get; private set; }
+    public DateTimeOffset? ConfirmedAtUtc { get; private set; }
 
     // Constructor rỗng cho EF Core (materialization qua reflection)
     private Transaction()
@@ -63,6 +64,31 @@ public sealed class Transaction
         );
     }
 
+    public Result Reverse(DateTimeOffset reversedAtUtc)
+    {
+        if (State == TransactionState.Reversed)
+            return TransactionErrors.AlreadyReversed;
+
+        State = TransactionState.Reversed;
+        ReversedAtUtc = reversedAtUtc.ToUniversalTime();
+
+        return Result.Success();
+    }
+
+    public Result Confirm(DateTimeOffset confirmedAtUtc)
+    {
+        if (State == TransactionState.Reversed)
+            return TransactionErrors.AlreadyReversed;
+
+        if (State == TransactionState.Confirmed)
+            return TransactionErrors.AlreadyConfirmed;
+
+        State = TransactionState.Confirmed;
+        ConfirmedAtUtc = confirmedAtUtc.ToUniversalTime();
+
+        return Result.Success();
+    }
+
     private static Result Validate(
         Guid id, Guid spaceId, Guid envelopeId,
         decimal amount, TransactionDirection direction)
@@ -81,17 +107,6 @@ public sealed class Transaction
 
         if (!Enum.IsDefined(direction))
             return Result.Failure(TransactionErrors.DirectionInvalid);
-
-        return Result.Success();
-    }
-
-    public Result Reverse(DateTimeOffset reversedAtUtc)
-    {
-        if (State == TransactionState.Reversed)
-            return TransactionErrors.AlreadyReversed;
-
-        State = TransactionState.Reversed;
-        ReversedAtUtc = reversedAtUtc.ToUniversalTime();
 
         return Result.Success();
     }

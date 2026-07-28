@@ -47,6 +47,11 @@ public static class TransactionErrors
         "Transaction already reversed.",
         ErrorType.Conflict);
 
+    public static readonly Error AlreadyConfirmed = new(
+        "Ledger.AlreadyConfirmed",
+        "Transaction already confirmed.",
+        ErrorType.Conflict);
+
     public static Error Overspent(decimal attemptedAmount, decimal remaining)
     {
         return new(

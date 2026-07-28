@@ -27,7 +27,7 @@ public sealed class TransactionEndpoints
     private static async Task<IResult> RecordTransactionAsync(
         RecordTransactionRequest request,
         IMessageBus bus,
-        ITransactionStatusStore statusStore,
+        ITransactionRequestStatusStore statusStore,
         HttpResponse response,
         CancellationToken cancellationToken)
     {
@@ -41,12 +41,12 @@ public sealed class TransactionEndpoints
 
         response.Headers.RetryAfter = "5";
 
-        return Results.Accepted($"/transactions/{transactionId}", new { transactionId, status = TransactionStatus.Pending.ToString() });
+        return Results.Accepted($"/transactions/{transactionId}", new { transactionId, status = TransactionRequestStatus.Pending.ToString() });
     }
 
     private static async Task<IResult> GetTransactionStatusAsync(
         Guid id,
-        ITransactionStatusStore statusStore,
+        ITransactionRequestStatusStore statusStore,
         CancellationToken cancellationToken)
     {
         var snapshot = await statusStore.FindAsync(id, cancellationToken);
@@ -54,7 +54,7 @@ public sealed class TransactionEndpoints
         if (snapshot is null)
             return Result.Failure(TransactionErrors.NotFound(id)).ToProblemDetails();
 
-        if (snapshot.Status == TransactionStatus.Failed)
+        if (snapshot.Status == TransactionRequestStatus.Failed)
         {
             if (snapshot.Error is null)
                 return Result.Failure(TransactionErrors.ErrorInvalid).ToProblemDetails();

@@ -6,15 +6,15 @@ using Finmy.SharedKernel.Results;
 
 namespace Finmy.Ledger.Infrastructure.Persistence;
 
-public sealed class InMemoryTransactionStatusStore(TimeProvider timeProvider) : ITransactionStatusStore
+public sealed class InMemoryTransactionStatusStore(TimeProvider timeProvider) : ITransactionRequestStatusStore
 {
-    private readonly ConcurrentDictionary<Guid, TransactionStatusSnapshot> _snapshot = new();
+    private readonly ConcurrentDictionary<Guid, TransactionRequestSnapshot> _snapshot = new();
 
     public Task MarkPendingAsync(Guid transactionId, CancellationToken cancellationToken = default)
     {
         var now = timeProvider.GetUtcNow();
 
-        _snapshot[transactionId] = new TransactionStatusSnapshot(transactionId, TransactionStatus.Pending, now, now, null);
+        _snapshot[transactionId] = new TransactionRequestSnapshot(transactionId, TransactionRequestStatus.Pending, now, now, null);
 
         return Task.CompletedTask;
     }
@@ -23,9 +23,9 @@ public sealed class InMemoryTransactionStatusStore(TimeProvider timeProvider) : 
     {
         var now = timeProvider.GetUtcNow();
 
-        _snapshot[transactionId] = _snapshot.TryGetValue(transactionId, out TransactionStatusSnapshot? snapshot)
-            ? new TransactionStatusSnapshot(transactionId, TransactionStatus.Succeeded, snapshot.CreatedAt, now, null)
-            : new TransactionStatusSnapshot(transactionId, TransactionStatus.Succeeded, now, now, null);
+        _snapshot[transactionId] = _snapshot.TryGetValue(transactionId, out TransactionRequestSnapshot? snapshot)
+            ? new TransactionRequestSnapshot(transactionId, TransactionRequestStatus.Succeeded, snapshot.CreatedAt, now, null)
+            : new TransactionRequestSnapshot(transactionId, TransactionRequestStatus.Succeeded, now, now, null);
 
         return Task.CompletedTask;
     }
@@ -34,18 +34,18 @@ public sealed class InMemoryTransactionStatusStore(TimeProvider timeProvider) : 
     {
         var now = timeProvider.GetUtcNow();
 
-        _snapshot[transactionId] = _snapshot.TryGetValue(transactionId, out TransactionStatusSnapshot? snapshot)
-            ? new TransactionStatusSnapshot(transactionId, TransactionStatus.Failed, snapshot.CreatedAt, now, error)
-            : new TransactionStatusSnapshot(transactionId, TransactionStatus.Failed, now, now, error);
+        _snapshot[transactionId] = _snapshot.TryGetValue(transactionId, out TransactionRequestSnapshot? snapshot)
+            ? new TransactionRequestSnapshot(transactionId, TransactionRequestStatus.Failed, snapshot.CreatedAt, now, error)
+            : new TransactionRequestSnapshot(transactionId, TransactionRequestStatus.Failed, now, now, error);
 
         return Task.CompletedTask;
     }
 
-    public Task<TransactionStatusSnapshot?> FindAsync(Guid transactionId, CancellationToken cancellationToken = default)
+    public Task<TransactionRequestSnapshot?> FindAsync(Guid transactionId, CancellationToken cancellationToken = default)
     {
         return Task.FromResult
         (
-            _snapshot.TryGetValue(transactionId, out TransactionStatusSnapshot? snapshot)
+            _snapshot.TryGetValue(transactionId, out TransactionRequestSnapshot? snapshot)
             ? snapshot
             : null
         );

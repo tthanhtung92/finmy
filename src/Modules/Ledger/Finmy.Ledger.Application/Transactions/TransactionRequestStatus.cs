@@ -1,6 +1,6 @@
 ﻿namespace Finmy.Ledger.Application.Transactions;
 
-public enum TransactionStatus
+public enum TransactionRequestStatus
 {
     Pending,
     Succeeded,

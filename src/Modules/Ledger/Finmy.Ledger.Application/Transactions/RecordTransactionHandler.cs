@@ -16,7 +16,7 @@ namespace Finmy.Ledger.Application.Transactions;
 
 public sealed class RecordTransactionHandler(
     ITransactionRepository repository,
-    ITransactionStatusStore statusStore,
+    ITransactionRequestStatusStore statusStore,
     ILogger<RecordTransactionHandler> logger)
 {
     public async Task<TransactionPostedEvent> HandleAsync(RecordTransactionCommand command, CancellationToken cancellationToken)
@@ -38,9 +38,6 @@ public sealed class RecordTransactionHandler(
         }
 
         repository.Add(result.Value);
-
-        await statusStore.MarkSucceededAsync(command.TransactionId, cancellationToken);
-        logger.LogInformation("Transaction with Id '{TransactionId}' succeeded.", command.TransactionId);
 
         return new TransactionPostedEvent(
             result.Value.Id,
