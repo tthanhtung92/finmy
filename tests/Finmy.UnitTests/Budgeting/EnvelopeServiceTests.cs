@@ -1,4 +1,5 @@
 ﻿using Finmy.Budgeting.Application.Abstractions;
+using Finmy.Budgeting.Application.Caching;
 using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Budgeting.Domain.Envelopes;
@@ -28,9 +29,16 @@ public class EnvelopeServiceTests
         var categoryRepo = Substitute.For<ICategoryRepository>();
         var cache = Substitute.For<HybridCache>();
         var logger = Substitute.For<ILogger<EnvelopeService>>();
-        var outputCache = Substitute.For<IOutputCacheInvalidator>();
         var realtime = Substitute.For<IEnvelopeRealtimeNotifier>();
-        var service = new EnvelopeService(envelopeRepo, categoryRepo, cache, logger, outputCache, realtime);
+        var envelopeCacheInvalidator = Substitute.For<IEnvelopeCacheInvalidator>();
+
+        var service = new EnvelopeService(
+            envelopeRepo, 
+            categoryRepo, 
+            cache, 
+            logger,
+            realtime,
+            envelopeCacheInvalidator);
 
         categoryRepo.ExistsAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
 

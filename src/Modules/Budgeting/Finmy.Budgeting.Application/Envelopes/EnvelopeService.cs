@@ -1,4 +1,5 @@
 ﻿using Finmy.Budgeting.Application.Abstractions;
+using Finmy.Budgeting.Application.Abstractions.Dtos;
 using Finmy.Budgeting.Application.Caching;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Budgeting.Domain.Envelopes;
@@ -15,8 +16,8 @@ public sealed class EnvelopeService(
     ICategoryRepository categoryRepository,
     HybridCache cache,
     ILogger<EnvelopeService> logger,
-    IOutputCacheInvalidator outputCache,
-    IEnvelopeRealtimeNotifier realtime
+    IEnvelopeRealtimeNotifier realtime,
+    IEnvelopeCacheInvalidator envelopeCacheInvalidator
     )
 {
     public async Task<Result<Guid>> CreateAsync(CreateEnvelopeRequest request, CancellationToken cancellationToken)
@@ -35,9 +36,17 @@ public sealed class EnvelopeService(
 
         await envelopeRepository.SaveChangesAsync(cancellationToken);
 
-        await InvalidateAsync(BudgetingCachePolicy.SummaryTagsForPeriod(result.Value.PeriodStartUtc, result.Value.PeriodEndUtc), cancellationToken);
+        await envelopeCacheInvalidator.InvalidateAsync(result.Value.PeriodStartUtc, result.Value.PeriodEndUtc, cancellationToken);
 
-        await realtime.EnvelopeUpdatedAsync(result.Value.Id, result.Value.Name, result.Value.Allocated, cancellationToken);
+        var snapshot = new EnvelopeBalanceSnapshot
+        (
+            result.Value.Id,
+            result.Value.Name,
+            result.Value.Allocated,
+            result.Value.Spent,
+            result.Value.Remaining
+        );
+        await realtime.EnvelopeUpdatedAsync(snapshot, cancellationToken);
 
         return result.Value.Id;
     }
@@ -53,7 +62,7 @@ public sealed class EnvelopeService(
 
         await envelopeRepository.SaveChangesAsync(cancellationToken);
 
-        await InvalidateAsync(BudgetingCachePolicy.SummaryTagsForPeriod(envelope.PeriodStartUtc, envelope.PeriodEndUtc), cancellationToken);
+        await envelopeCacheInvalidator.InvalidateAsync(envelope.PeriodStartUtc, envelope.PeriodEndUtc, cancellationToken);
 
         await realtime.EnvelopeDeletedAsync(id, cancellationToken);
 
@@ -82,16 +91,18 @@ public sealed class EnvelopeService(
 
         await envelopeRepository.SaveChangesAsync(cancellationToken);
 
-        var oldTags = BudgetingCachePolicy.SummaryTagsForPeriod(oldPeriodStart, oldPeriodEnd);
-        var newTags = BudgetingCachePolicy.SummaryTagsForPeriod(envelope.PeriodStartUtc, envelope.PeriodEndUtc);
+        await envelopeCacheInvalidator.InvalidateAsync(oldPeriodStart, oldPeriodEnd, cancellationToken);
+        await envelopeCacheInvalidator.InvalidateAsync(envelope.PeriodStartUtc, envelope.PeriodEndUtc, cancellationToken);
 
-        //Gộp tag lại, khử trùng lặp bằng HashSet
-        HashSet<string> summaryTags = oldTags.ToHashSet();
-        summaryTags.UnionWith(newTags);
-
-        await InvalidateAsync(summaryTags.ToList(), cancellationToken);
-
-        await realtime.EnvelopeUpdatedAsync(envelope.Id, envelope.Name, envelope.Allocated, cancellationToken);
+        var snapshot = new EnvelopeBalanceSnapshot
+        (
+            envelope.Id,
+            envelope.Name,
+            envelope.Allocated,
+            envelope.Spent,
+            envelope.Remaining
+        );
+        await realtime.EnvelopeUpdatedAsync(snapshot, cancellationToken);
 
         return new EnvelopeResponse
         (
@@ -100,6 +111,8 @@ public sealed class EnvelopeService(
             envelope.Description,
             envelope.CategoryId,
             envelope.Allocated,
+            envelope.Spent,
+            envelope.Remaining,
             envelope.PeriodStartUtc,
             envelope.PeriodEndUtc
         );
@@ -119,6 +132,8 @@ public sealed class EnvelopeService(
             envelope.Description,
             envelope.CategoryId,
             envelope.Allocated,
+            envelope.Spent,
+            envelope.Remaining,
             envelope.PeriodStartUtc,
             envelope.PeriodEndUtc
         );
@@ -144,6 +159,8 @@ public sealed class EnvelopeService(
                        x.Description,
                        x.CategoryId,
                        x.Allocated,
+                       x.Spent,
+                       x.Remaining,
                        x.PeriodStartUtc,
                        x.PeriodEndUtc
                    ))
@@ -152,7 +169,7 @@ public sealed class EnvelopeService(
                 return new PagedResult<EnvelopeResponse>(mappedItems, page, pageSize, totalCount);
             },
             options: BudgetingCachePolicy.EnvelopeListEntry,
-            tags: [ BudgetingCachePolicy.EnvelopeListTag ],
+            tags: [BudgetingCachePolicy.EnvelopeListTag],
             cancellationToken: cancellationToken
         );
 
@@ -175,21 +192,25 @@ public sealed class EnvelopeService(
 
                 var listSummary = await envelopeRepository.GetMonthlySummaryAsync(monthStartUtc, monthEndUtc, cancelToken);
 
-                var grandTotal = listSummary.Sum(x => x.TotalAllocated);
+                var grandTotalAllocated = listSummary.Sum(x => x.TotalAllocated);
+                var grandTotalSpent = listSummary.Sum(x => x.TotalSpent);
+                var grandTotalRemaining = listSummary.Sum(x => x.TotalRemaining);
 
-                return new MonthlySummaryResponse(year, month, listSummary, grandTotal);
+                return new MonthlySummaryResponse
+                (
+                    year,
+                    month,
+                    listSummary,
+                    grandTotalAllocated,
+                    grandTotalSpent,
+                    grandTotalRemaining
+                );
             },
             options: BudgetingCachePolicy.MonthlySummaryEntry,
-            tags: [ BudgetingCachePolicy.SummaryTag(year, month) ],
+            tags: [BudgetingCachePolicy.SummaryTag(year, month)],
             cancellationToken: cancellationToken
         );
 
         return result;
-    }
-
-    private async Task InvalidateAsync(IReadOnlyList<string> summaryTags, CancellationToken cancellationToken)
-    {
-        await cache.RemoveByTagAsync([BudgetingCachePolicy.EnvelopeListTag, .. summaryTags], cancellationToken);
-        await outputCache.EvictByTagsAsync([BudgetingCachePolicy.OutputListTag, BudgetingCachePolicy.OutputSummaryTag], cancellationToken);
     }
 }

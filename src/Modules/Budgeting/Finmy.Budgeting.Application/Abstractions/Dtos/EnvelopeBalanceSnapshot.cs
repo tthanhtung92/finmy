@@ -1,6 +1,6 @@
-﻿namespace Finmy.Budgeting.Api.Realtime;
+namespace Finmy.Budgeting.Application.Abstractions.Dtos;
 
-public record EnvelopeRealtimeState(
+public record EnvelopeBalanceSnapshot(
     Guid Id, 
     string Name, 
     decimal Allocated, 

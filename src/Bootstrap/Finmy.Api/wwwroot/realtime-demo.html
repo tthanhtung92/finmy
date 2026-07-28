@@ -178,6 +178,14 @@
             .log-entry.del .tag {
                 color: var(--danger);
             }
+
+            .log-entry.warn .tag {
+                color: var(--warn);
+            }
+
+            .log-entry.danger .tag {
+                color: var(--danger);
+            }
     </style>
 </head>
 <body>
@@ -199,7 +207,7 @@
             <h2>Envelopes đang theo dõi</h2>
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Tên</th><th>Đã phân bổ</th><th></th></tr>
+                    <tr><th>ID</th><th>Tên</th><th>Đã phân bổ</th><th>Đã tiêu</th><th>Còn lại</th><th></th></tr>
                 </thead>
                 <tbody id="envelopeBody"></tbody>
             </table>
@@ -236,9 +244,11 @@
             statusText.textContent = label;
         }
 
-        function addLog(tag, message, isDelete) {
+        function addLog(tag, message, variant) {
             const entry = document.createElement("div");
-            entry.className = "log-entry" + (isDelete ? " del" : "");
+            // giữ tương thích ngược: addLog(tag, message, true) vẫn được hiểu là "del"
+            const variantClass = variant === true ? "del" : (variant || "");
+            entry.className = "log-entry" + (variantClass ? " " + variantClass : "");
             const time = new Date().toLocaleTimeString();
             entry.innerHTML = `<span class="tag">[${tag}]</span> ${time} — ${message}`;
             log.appendChild(entry);
@@ -255,11 +265,13 @@
                 const tr = document.createElement("tr");
                 if (state.deleted) tr.classList.add("deleted");
                 tr.innerHTML = `
-                        <td>${state.id}</td>
-                        <td>${state.name ?? ""}</td>
-                        <td>${state.allocated ?? ""}</td>
-                        <td>${state.deleted ? "đã xoá" : ""}</td>
-                    `;
+                            <td>${state.id}</td>
+                            <td>${state.name ?? ""}</td>
+                            <td>${state.allocated ?? ""}</td>
+                            <td>${state.spent ?? ""}</td>
+                            <td>${state.remaining ?? ""}</td>
+                            <td>${state.deleted ? "đã xoá" : ""}</td>
+                        `;
                 envelopeBody.appendChild(tr);
             }
         }
@@ -268,7 +280,7 @@
             // ve lai: state.id, state.name, state.allocated
             const existing = envelopes.get(state.id) || {};
             envelopes.set(state.id, { ...existing, ...state, deleted: false });
-            addLog("EnvelopeUpdated", `#${state.id} "${state.name}" — allocated: ${state.allocated}`);
+            addLog("EnvelopeUpdated", `#${state.id} "${state.name}" — còn lại: ${state.remaining}`);
             render();
         });
 
@@ -283,6 +295,21 @@
             watchedIds.delete(id);
             addLog("EnvelopeDeleted", `#${id} đã bị xoá`, true);
             render();
+        });
+
+        connection.on("EnvelopeAlert", (alert) => {
+            // alert.level: 0 = sắp cạn, 1 = đã vượt
+            const isExceeded = alert.level === 1;
+            const levelText = isExceeded ? "ĐÃ VƯỢT HẠN MỨC" : "SẮP CẠN";
+            const variant = isExceeded ? "danger" : "warn";
+            const attemptedText = alert.attemptedAmount != null
+                ? ` (số tiền định chi: ${alert.attemptedAmount})`
+                : "";
+            addLog(
+                "EnvelopeAlert",
+                `#${alert.id} — ${levelText} — còn lại: ${alert.remaining} / đã tiêu: ${alert.spent} / hạn mức: ${alert.allocated}${attemptedText}`,
+                variant
+            );
         });
 
         connection.onreconnecting(() => {

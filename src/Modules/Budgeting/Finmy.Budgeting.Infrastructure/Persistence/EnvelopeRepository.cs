@@ -55,6 +55,8 @@ public sealed class EnvelopeRepository(BudgetingDbContext dbContext) : IEnvelope
                 CategoryId = g.Key.Id,
                 CategoryName = g.Key.Name,
                 TotalAllocated = g.Sum(x => x.Envelope.Allocated),
+                TotalSpent = g.Sum(x => x.Envelope.Spent),
+                TotalRemaining = g.Sum(x => x.Envelope.Allocated - x.Envelope.Spent),
                 EnvelopeCount = g.Count()
             })
             .OrderBy(s => s.CategoryName)
@@ -66,6 +68,8 @@ public sealed class EnvelopeRepository(BudgetingDbContext dbContext) : IEnvelope
                 CategoryId: x.CategoryId,
                 CategoryName: x.CategoryName,
                 TotalAllocated: x.TotalAllocated,
+                TotalSpent: x.TotalSpent,
+                TotalRemaining: x.TotalRemaining,
                 EnvelopeCount: x.EnvelopeCount
             ))
             .ToList();

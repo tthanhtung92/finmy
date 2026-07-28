@@ -2,6 +2,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 
 using Finmy.Budgeting.Application.Abstractions;
+using Finmy.Budgeting.Application.Caching;
 using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Receipts;
 using Finmy.Budgeting.Infrastructure.Persistence;
@@ -57,8 +58,9 @@ public static class DependencyInjection
         // AddScoped
         services.AddScoped<IEnvelopeRepository, EnvelopeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
-        services.AddScoped<EnvelopeService>();
         services.AddScoped<IReceiptRepository, ReceiptRepository>();
+        services.AddScoped<IEnvelopeCacheInvalidator, EnvelopeCacheInvalidator>();
+        services.AddScoped<EnvelopeService>();
         services.AddScoped<ReceiptService>();
 
         // Configure Hosted Service
