@@ -64,4 +64,9 @@ public static class EnvelopeErrors
         "Budgeting.AllocatedBelowSpent",
         "The newly allocated amount cannot be less than the amount already spent.",
         ErrorType.Conflict);
+
+    public static readonly Error FundAmountNotPositive = new(
+        "Budgeting.FundAmountNotPositive",
+        "The fund amount must be greater than zero.",
+        ErrorType.Validation);
 }

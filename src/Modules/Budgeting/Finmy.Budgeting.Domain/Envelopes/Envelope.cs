@@ -83,28 +83,6 @@ public sealed class Envelope
         return Result.Success();
     }
 
-    private static Result Validate(
-        string name, Guid categoryId, decimal allocated,
-        DateTimeOffset periodStart, DateTimeOffset periodEnd)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return Result.Failure(EnvelopeErrors.NameEmpty);
-
-        if (name.Trim().Length > 200)
-            return Result.Failure(EnvelopeErrors.NameTooLong);
-
-        if (categoryId == Guid.Empty)
-            return Result.Failure(EnvelopeErrors.CategoryRequired);
-
-        if (periodEnd <= periodStart)
-            return Result.Failure(EnvelopeErrors.PeriodInvalid);
-
-        if (allocated <= 0m)
-            return Result.Failure(EnvelopeErrors.AllocatedNotPositive);
-
-        return Result.Success();
-    }
-
     public Result Spend(decimal amount)
     {
         if (amount <= 0)
@@ -129,6 +107,39 @@ public sealed class Envelope
 
         Spent -= amount;
         Version++;
+
+        return Result.Success();
+    }
+
+    public Result Fund(decimal amount)
+    {
+        if (amount <= 0)
+            return Result.Failure(EnvelopeErrors.FundAmountNotPositive);
+
+        Allocated += amount;
+        Version++;
+
+        return Result.Success();
+    }
+
+    private static Result Validate(
+        string name, Guid categoryId, decimal allocated,
+        DateTimeOffset periodStart, DateTimeOffset periodEnd)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return Result.Failure(EnvelopeErrors.NameEmpty);
+
+        if (name.Trim().Length > 200)
+            return Result.Failure(EnvelopeErrors.NameTooLong);
+
+        if (categoryId == Guid.Empty)
+            return Result.Failure(EnvelopeErrors.CategoryRequired);
+
+        if (periodEnd <= periodStart)
+            return Result.Failure(EnvelopeErrors.PeriodInvalid);
+
+        if (allocated <= 0m)
+            return Result.Failure(EnvelopeErrors.AllocatedNotPositive);
 
         return Result.Success();
     }
