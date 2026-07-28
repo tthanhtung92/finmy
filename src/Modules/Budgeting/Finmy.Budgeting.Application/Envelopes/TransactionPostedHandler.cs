@@ -7,6 +7,8 @@ using Finmy.Contracts.Ledger;
 
 using Microsoft.Extensions.Logging;
 
+using Wolverine;
+
 namespace Finmy.Budgeting.Application.Envelopes;
 
 public sealed class TransactionPostedHandler(
@@ -14,7 +16,7 @@ public sealed class TransactionPostedHandler(
     TimeProvider timeProvider,
     ILogger<TransactionPostedHandler> logger)
 {
-    public async Task<EnvelopeOverspentEvent?> HandleAsync(TransactionPostedEvent message, CancellationToken cancellationToken)
+    public async Task<OutgoingMessages> HandleAsync(TransactionPostedEvent message, CancellationToken cancellationToken)
     {
         var envelope = await repository.GetByIdAsync(message.EnvelopeId, cancellationToken);
 
@@ -24,26 +26,54 @@ public sealed class TransactionPostedHandler(
         var result = message.Direction switch
         {
             TransactionDirection.Expense => envelope.Spend(message.Amount),
-            TransactionDirection.Income => envelope.Release(message.Amount),
+            TransactionDirection.Income => envelope.Fund(message.Amount),
             _ => throw new UnreachableException("unmapped TransactionDirection")
         };
         var action = message.Direction switch
         {
             TransactionDirection.Expense => "spend",
-            TransactionDirection.Income => "release",
+            TransactionDirection.Income => "fund",
             _ => throw new UnreachableException("unmapped TransactionDirection")
         };
+
+        var outgoing = new OutgoingMessages();
 
         if (result.IsSuccess)
         {
             logger.LogInformation("Envelope with Id '{EnvelopeId}' {Action} succeeded.", message.EnvelopeId, action);
-            return null;
+
+            outgoing.Add(new EnvelopeBalanceChangedEvent(
+                message.TransactionId,
+                message.SpaceId,
+                message.EnvelopeId,
+                envelope.Name,
+                message.Amount, 
+                envelope.Allocated,
+                envelope.Spent,
+                envelope.Remaining,
+                envelope.PeriodStartUtc,
+                envelope.PeriodEndUtc,
+                timeProvider.GetUtcNow()
+                ));
+            
+            return outgoing;
         }
 
         if (result.Error == EnvelopeErrors.InsufficientFunds)
         {
             logger.LogWarning("Envelope with Id '{EnvelopeId}' {Action} rejected: '{ErrorCode}'.", message.EnvelopeId, action, result.Error.Code);
-            return new EnvelopeOverspentEvent(message.TransactionId, message.SpaceId, message.EnvelopeId, message.Amount, envelope.Remaining, timeProvider.GetUtcNow());
+
+            outgoing.Add(new EnvelopeOverspentEvent(
+                message.TransactionId, 
+                message.SpaceId, 
+                message.EnvelopeId, 
+                message.Amount, 
+                envelope.Allocated,
+                envelope.Spent,
+                envelope.Remaining, 
+                timeProvider.GetUtcNow()));
+
+            return outgoing;
         }
         else
         {

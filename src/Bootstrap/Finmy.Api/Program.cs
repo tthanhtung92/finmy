@@ -55,6 +55,8 @@ builder.Host.UseWolverine(opts =>
     opts.Policies.OnException<DbUpdateConcurrencyException>()
         .RetryWithCooldown(100.Milliseconds(), 250.Milliseconds(), 500.Milliseconds())
         .Then.MoveToErrorQueue();
+    opts.MultipleHandlerBehavior = MultipleHandlerBehavior.Separated;
+    opts.Durability.MessageIdentity = MessageIdentity.IdAndDestination;
 });
 
 var app = builder.Build();
