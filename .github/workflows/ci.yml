@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # Local-manifest tools: dotnet-ef isn't used in CI directly, but dotnet
+      # dotnet-coverage inside scripts/coverage.ps1 needs the manifest restored.
+      - run: dotnet tool restore
+
+      - run: dotnet restore Finmy.slnx
+
+      # TreatWarningsAsErrors + AnalysisMode=Recommended (Directory.Build.props)
+      # make this the analyzer gate, not just a compile check.
+      - run: dotnet build Finmy.slnx -c Release --no-restore
+
+      - name: Check for vulnerable packages
+        run: |
+          dotnet list Finmy.slnx package --vulnerable --format json > vulnerable.json
+          if grep -q '"vulnerabilities"' vulnerable.json; then
+            echo "::error::Vulnerable NuGet packages found:"
+            cat vulnerable.json
+            exit 1
+          fi
+          echo "No vulnerable packages found."
+
+      # Reflects over the production assemblies without executing them, so it
+      # runs apart from coverage.ps1 rather than dragging the number down.
+      - run: dotnet test tests/Finmy.ArchitectureTests/Finmy.ArchitectureTests.csproj -c Release --no-restore
+
+      # Runs unit and integration (Testcontainers: Postgres, Redis, MinIO --
+      # ubuntu-latest ships a working Docker daemon already) and gates on the
+      # 52% line / 48% branch floor.
+      - shell: pwsh
+        run: ./scripts/coverage.ps1
