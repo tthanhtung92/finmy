@@ -18,7 +18,7 @@ The anti-overspend loop is closed end to end: `Envelope` carries `Spent`, a comp
 
 **Quality gates.** `Directory.Build.props` turns on the .NET analyzers at `AnalysisMode=Recommended` with `EnforceCodeStyleInBuild`, plus SonarAnalyzer.CSharp and Roslynator for every project; `TreatWarningsAsErrors` was already on, so all of it fails the build. `tests/Finmy.ArchitectureTests` holds the boundary rule with NetArchTest and the ADR-0009 `Version++` invariant with a Roslyn source guard. `tests/Finmy.IntegrationTests` drives the real host over HTTP through `FinmyApiFactory` against Postgres, Redis and MinIO containers. `scripts/coverage.ps1` keeps coverage from sliding below 52% lines and 48% branches.
 
-**What does not exist yet**, so its absence is expected: no `Space` aggregate, no Dockerfile, no CI workflows, no observability, no rate limiting or API versioning. Budgeting and Ledger endpoints are still anonymous. The status store (`InMemoryTransactionStatusStore`) is still in memory. `docs/TECH-DEBT.md` is the authoritative list of known gaps; `docs/ROADMAP.md` and `README.md` are the authoritative spec.
+**What does not exist yet**, so its absence is expected: no `Space` aggregate, no observability, no rate limiting or API versioning, no real health checks (readiness probing Postgres/Redis/MinIO). Budgeting and Ledger endpoints are still anonymous. The status store (`InMemoryTransactionStatusStore`) is still in memory. `docs/TECH-DEBT.md` is the authoritative list of known gaps; `docs/ROADMAP.md` and `README.md` are the authoritative spec.
 
 Envelope balance stays in Budgeting by the single-writer rule ([ADR-0010](docs/adr/0010-single-writer-envelope-balance.md)).
 
@@ -58,7 +58,9 @@ That has one sharp edge. The old VSTest `--filter "FullyQualifiedName~X"` is sti
 
 A malformed `.runsettings` is reported as **"Zero tests ran"** with exit code 5 as well, with nothing said about parsing. The usual cause is a double hyphen inside an XML comment, which is illegal XML and easy to write when documenting the flags the file exists for.
 
-Infrastructure (Postgres, Redis, MinIO) runs via `docker compose --env-file .env -f docker/docker-compose.yml up -d`. The `--env-file .env` is required: the compose files live in `docker/` but `.env` sits at the repo root, so without it every variable resolves empty. `docker/docker-compose.local.yml` is the same stack plus pgadmin and redisinsight.
+`.runsettings`' `ModulePaths` is an allowlist (`Finmy.*.dll` by file name), not a denylist. A third-party package's PDB can resolve on one OS and not another: `JasperFx` alone added 23000+ uncovered lines on the Linux CI runner the first time `coverage.ps1` ran there, invisible on the Windows dev machine. If coverage numbers look wrong on a new runner or OS, check this file before the test code.
+
+`docker compose -f docker/docker-compose.yml up -d` brings up the whole system: Postgres, Redis, MinIO, a one-shot `migrate` service, then `api`. No `.env` needed, every value has an inline development default; `--env-file .env` only overrides them. `docker/docker-compose.local.yml` is a standalone duplicate (not an override layer) with pgadmin and redisinsight added, but it does not run `api`/`migrate` and its pgadmin now collides with `api` on host port 8080 (TECH-DEBT #17).
 
 ## Architecture and boundaries
 
@@ -77,7 +79,7 @@ One process, source split into self-contained **modules** under `src/Modules/`: 
 
 ### Wolverine traps that cost real time
 
-- `WolverineFx.RuntimeCompilation` must stay referenced under `Condition="'$(Configuration)' == 'Debug'"` in `src/Bootstrap/Finmy.Api`. Wolverine 6.0 moved Roslyn out of the core package, so Dynamic codegen dies at **startup** with an `InvalidOperationException` about `IAssemblyGenerator` while `dotnet build` stays green.
+- Production codegen mode is `TypeLoadMode.Auto`, not `Static` ([ADR-0013](docs/adr/0013-wolverine-auto-codegen-in-production.md)), so `WolverineFx.RuntimeCompilation` is referenced **unconditionally** in `src/Bootstrap/Finmy.Api` on purpose. Do not add back a `Configuration == 'Debug'` condition. Wolverine 6.0 moved Roslyn out of the core package; without this reference, `Auto` mode's fallback throws `JasperFx.CodeGeneration.ExpectedTypeMissingException` on the **first handler invocation**, not at startup, so a health check alone will not catch it.
 - A handler's return value is a **cascading message**, not an ordinary return value: Wolverine publishes it onward. Use `InvokeAsync<T>` for request-reply (since v3.0 the reply type is not also published), or return plain `Task` to publish nothing.
 - Handlers live outside the host assembly, so each module's `*.Application` needs `[assembly: WolverineModule]`. Without it Wolverine never scans that assembly and the message gets no handler.
 - Any repository a handler injects must be `public`. Codegen emits `new EnvelopeRepository(...)` inside the generated `Internal.Generated.WolverineHandlers` assembly, so `internal` fails there while `dotnet build` stays green. Verify with `codegen preview`, not `build`.
@@ -98,3 +100,4 @@ The concurrency token is a plain `int Version` on `Envelope`, incremented by the
 - The solution uses the **`.slnx`** format (`Finmy.slnx`); edit it as XML when adding projects.
 - `Directory.Build.props` and `Directory.Packages.props` (Central Package Management) live at the repo root. `Directory.Build.props` gives every project `net10.0`, `Nullable`, and `TreatWarningsAsErrors`; package versions are pinned centrally, so never put `Version=` on a `PackageReference`. Add shared build settings and central versions there.
 - **Prose docs** (`README.md`, `docs/**`, ADRs): run the `humanizer:humanizer` skill before committing. Does not apply to commit messages or CLI code fences.
+- `main`'s branch protection is a modern **Ruleset** (`gh api repos/tthanhtung92/finmy/rulesets`), not classic branch protection. It predates Phase 2 and already required PR review; Phase 2 only added required status checks to it. Extend it in place (`PUT .../rulesets/<id>` with the full rule set), don't create a second, conflicting classic-protection config.
