@@ -4,7 +4,16 @@
   "tools": {
     "dotnet-ef": {
       "version": "10.0.10",
-      "commands": ["dotnet-ef"],
+      "commands": [
+        "dotnet-ef"
+      ],
+      "rollForward": false
+    },
+    "dotnet-coverage": {
+      "version": "18.9.0",
+      "commands": [
+        "dotnet-coverage"
+      ],
       "rollForward": false
     }
   }

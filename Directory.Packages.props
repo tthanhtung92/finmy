@@ -57,6 +57,7 @@
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
     <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
     <!-- Held at the version Microsoft.EntityFrameworkCore.Design 10.0.10 pulls in.
          Transitive pinning applies this solution-wide, so a newer Roslyn here breaks
          the EF design-time packages with NU1107. -->

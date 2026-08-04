@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <!--
+    Coverage settings for Microsoft.Testing.Extensions.CodeCoverage, the Microsoft Testing
+    Platform collector. This is not a VSTest run settings file: the suite runs on MTP, so
+    coverlet and the VSTest collectors do not apply.
+
+    See CLAUDE.md for the command line. Note that a double hyphen cannot appear inside an
+    XML comment, so the flags cannot be written out here. It matters more than it looks:
+    an invalid comment makes the collector reject the whole file, and it reports that as
+    "Zero tests ran" with exit code 5 rather than as a parse error.
+  -->
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <CodeCoverage>
+            <ModulePaths>
+              <Exclude>
+                <!-- Only production code is measured. -->
+                <ModulePath>.*Tests\.dll$</ModulePath>
+                <ModulePath>.*Testcontainers.*\.dll$</ModulePath>
+                <ModulePath>.*NetArchTest.*\.dll$</ModulePath>
+              </Exclude>
+            </ModulePaths>
+
+            <Sources>
+              <Exclude>
+                <!-- EF scaffolds migrations. Nobody writes that code and nobody tests it. -->
+                <Source>.*\\Migrations\\.*</Source>
+                <Source>.*\\obj\\.*</Source>
+              </Exclude>
+            </Sources>
+
+            <Functions>
+              <Exclude>
+                <!-- Composition root, design-time plumbing and Wolverine's generated handler
+                     wrappers: exercised by starting the host, not by assertions. -->
+                <Function>^Program\..*</Function>
+                <Function>.*DesignTimeDbContextFactory.*</Function>
+                <Function>^Internal\.Generated\..*</Function>
+              </Exclude>
+            </Functions>
+
+            <Attributes>
+              <Exclude>
+                <Attribute>^System\.Diagnostics\.CodeAnalysis\.ExcludeFromCodeCoverageAttribute$</Attribute>
+                <Attribute>^System\.CodeDom\.Compiler\.GeneratedCodeAttribute$</Attribute>
+              </Exclude>
+            </Attributes>
+
+            <CollectFromChildProcesses>true</CollectFromChildProcesses>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
