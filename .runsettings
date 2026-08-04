@@ -26,9 +26,13 @@
 
             <Sources>
               <Exclude>
-                <!-- EF scaffolds migrations. Nobody writes that code and nobody tests it. -->
-                <Source>.*\\Migrations\\.*</Source>
-                <Source>.*\\obj\\.*</Source>
+                <!--
+                  EF scaffolds migrations. Nobody writes that code and nobody tests it.
+                  [\\/] rather than \\ alone: this file has to exclude the same paths on
+                  the Windows dev machine and the Linux CI runner.
+                -->
+                <Source>.*[\\/]Migrations[\\/].*</Source>
+                <Source>.*[\\/]obj[\\/].*</Source>
               </Exclude>
             </Sources>
 
