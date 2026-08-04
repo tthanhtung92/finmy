@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Finmy.ArchitectureTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.mtp-v2" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <!--
+    Every production project is referenced on purpose. NetArchTest inspects compiled
+    assemblies, so a project that is not referenced here is a project whose boundaries
+    nothing checks.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Bootstrap\Finmy.Api\Finmy.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Api\Finmy.Budgeting.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Application\Finmy.Budgeting.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Domain\Finmy.Budgeting.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Infrastructure\Finmy.Budgeting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Finmy.Identity.Api\Finmy.Identity.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Finmy.Identity.Application\Finmy.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Finmy.Identity.Domain\Finmy.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Finmy.Identity.Infrastructure\Finmy.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ledger\Finmy.Ledger.Api\Finmy.Ledger.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ledger\Finmy.Ledger.Application\Finmy.Ledger.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ledger\Finmy.Ledger.Domain\Finmy.Ledger.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ledger\Finmy.Ledger.Infrastructure\Finmy.Ledger.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Finmy.Contracts\Finmy.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Finmy.Modularity\Finmy.Modularity.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Finmy.SharedKernel\Finmy.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>
