@@ -148,7 +148,7 @@ Phases run in order. Each is a separate implementation plan; open items carried 
 
 **Phase 1: build and quality gates (done 2026-08-04).** Pinned the SDK to 10.0.302 in `global.json` and moved the tool manifest under `.config/`. Turned on .NET analyzers at `Recommended` plus SonarAnalyzer and Roslynator, cleared the 101 warnings they raised, and gave `.editorconfig` real severities. Added `Finmy.ArchitectureTests`: NetArchTest for the boundary rule and the banned libraries of [ADR-0003](adr/0003-avoid-commercial-libraries.md), plus a Roslyn guard that every mutating `Envelope` method still bumps `Version` as [ADR-0009](adr/0009-self-managed-version-concurrency-token.md) requires. Added coverage through the MTP collector with `scripts/coverage.ps1` holding the floor at 52% lines and 48% branches. Paid off TECH-DEBT #5 and #6: `WebApplicationFactory` now drives the anti-overspend loop over HTTP against Postgres, Redis and MinIO containers, and a concurrent envelope write answers 409 instead of 500.
 
-**Phase 2: packaging and CI/CD.** Multi-stage Dockerfile with a non-root user, plus `.dockerignore`. An `api` service in the compose file. GitHub Actions for build, test, architecture test, integration test and coverage, and a release workflow pushing images to GHCR. Dependabot, CODEOWNERS, CodeQL, and `dotnet list package --vulnerable` as a gate. Branch protection on `main`.
+**Phase 2: packaging and CI/CD (done 2026-08-04).** Multi-stage Dockerfile with a non-root user, plus `.dockerignore`. An `api` service and a one-shot `migrate` service in the compose file, so `docker compose up` needs no `.env` and no manual migration step. GitHub Actions for build, test, architecture test, integration test and coverage, and a release workflow pushing images to GHCR, verified against a real tag. Dependabot, CODEOWNERS, CodeQL, and `dotnet list package --vulnerable` as a gate. Branch protection on `main` through the existing ruleset, extended with required status checks rather than replaced.
 
 **Phase 3: production hardening.** Real health checks with separate liveness and readiness endpoints probing Postgres, Redis and S3. Close the authorization gap on Budgeting and Ledger endpoints with a global authenticated-user fallback policy. Rate limiting. API versioning under `/api/v1`. Production configuration reading secrets from the environment, failing fast when a connection string is missing. A migration strategy that does not run `Database.Migrate()` at startup with multiple replicas. Move the transaction status store out of memory. Resilience policies on outbound calls.
 
@@ -164,10 +164,10 @@ Phases run in order. Each is a separate implementation plan; open items carried 
 
 ## 6. Definition of done
 
-- [ ] `git clone` then `docker compose up` brings the whole system up with no manual steps.
-- [ ] All three modules work end to end.
+- [x] `git clone` then `docker compose up` brings the whole system up with no manual steps.
+- [x] All three modules work end to end.
 - [ ] Every concept in section 4 has a slice that actually runs.
-- [ ] Unit, integration and architecture tests green in CI.
+- [x] Unit, integration and architecture tests green in CI.
 - [ ] The overspend scenario is demonstrable.
 - [ ] README carries an architecture diagram, benchmark numbers and a realtime demo.
 - [ ] Deployed and reachable over HTTPS, with dashboards showing it is healthy.

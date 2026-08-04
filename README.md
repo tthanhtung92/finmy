@@ -316,7 +316,7 @@ The phase plan is in [docs/ROADMAP.md](docs/ROADMAP.md); known gaps are tracked 
 - [x] Overspend protection with a race-condition test, and the full event chain
 - [x] Idempotency: `Idempotency-Key` on writes plus a consumer dedup table
 - [x] Build and quality gates: analyzers, coverage, NetArchTest, HTTP-level integration tests
-- [ ] Packaging and CI/CD: Dockerfile, GitHub Actions, image publishing
+- [x] Packaging and CI/CD: Dockerfile, GitHub Actions, image publishing
 - [ ] Production hardening: health checks, authorization, rate limiting, API versioning, durable status store
 - [ ] Observability: Serilog plus OpenTelemetry into a self-hosted Grafana stack
 - [ ] Deployment: Helm on k3s, Terraform, TLS, encrypted secrets
