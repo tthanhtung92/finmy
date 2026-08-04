@@ -23,6 +23,7 @@ public static class DependencyInjection
 
         // AddScoped
         services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IIdempotencyStore, IdempotencyStore>();
 
         return services;
     }

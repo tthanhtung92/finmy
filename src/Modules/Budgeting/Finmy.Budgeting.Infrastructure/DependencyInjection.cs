@@ -62,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<IEnvelopeCacheInvalidator, EnvelopeCacheInvalidator>();
         services.AddScoped<EnvelopeService>();
         services.AddScoped<ReceiptService>();
+        services.AddScoped<IProcessedTransactionStore, ProcessedTransactionStore>();
 
         // Configure Hosted Service
         services.AddHostedService<BucketInitializer>();

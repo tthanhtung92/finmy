@@ -35,8 +35,8 @@ public class IdentityService(
         var result = await userManager.CreateAsync(user, password);
 
         return result.Succeeded
-            ? Result<Guid>.Success(user.Id)
-            : Result<Guid>.Failure<Guid>(result.ToError());
+            ? Result.Success(user.Id)
+            : Result.Failure<Guid>(result.ToError());
     }
 
     public async Task<Guid?> VerifyPasswordAsync(string email, string password)

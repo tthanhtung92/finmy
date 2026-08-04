@@ -13,33 +13,39 @@ namespace Finmy.Budgeting.Application.Envelopes;
 
 public sealed class TransactionPostedHandler(
     IEnvelopeRepository repository,
+    IProcessedTransactionStore processedTransactionStore,
     TimeProvider timeProvider,
     ILogger<TransactionPostedHandler> logger)
 {
     public async Task<OutgoingMessages> HandleAsync(TransactionPostedEvent message, CancellationToken cancellationToken)
     {
+        var outgoing = new OutgoingMessages();
+
+        var wasApplied = await processedTransactionStore.WasAppliedAsync(message.TransactionId, cancellationToken);
+
+        if (wasApplied)
+        {
+            logger.LogInformation("Transaction with Id '{TransactionId}' was already applied.", message.TransactionId);
+
+            return outgoing;
+        }
+
         var envelope = await repository.GetByIdAsync(message.EnvelopeId, cancellationToken);
 
         if (envelope is null)
             throw new EnvelopeNotFoundException(message.EnvelopeId);
 
-        var result = message.Direction switch
+        var (result, action) = message.Direction switch
         {
-            TransactionDirection.Expense => envelope.Spend(message.Amount),
-            TransactionDirection.Income => envelope.Fund(message.Amount),
+            TransactionDirection.Expense => (envelope.Spend(message.Amount), "spend"),
+            TransactionDirection.Income => (envelope.Fund(message.Amount), "fund"),
             _ => throw new UnreachableException("unmapped TransactionDirection")
         };
-        var action = message.Direction switch
-        {
-            TransactionDirection.Expense => "spend",
-            TransactionDirection.Income => "fund",
-            _ => throw new UnreachableException("unmapped TransactionDirection")
-        };
-
-        var outgoing = new OutgoingMessages();
 
         if (result.IsSuccess)
         {
+            processedTransactionStore.MarkApplied(message.TransactionId, message.EnvelopeId, message.Amount, timeProvider.GetUtcNow());
+
             logger.LogInformation("Envelope with Id '{EnvelopeId}' {Action} succeeded.", message.EnvelopeId, action);
 
             outgoing.Add(new EnvelopeBalanceChangedEvent(
@@ -47,7 +53,7 @@ public sealed class TransactionPostedHandler(
                 message.SpaceId,
                 message.EnvelopeId,
                 envelope.Name,
-                message.Amount, 
+                message.Amount,
                 envelope.Allocated,
                 envelope.Spent,
                 envelope.Remaining,
@@ -55,7 +61,7 @@ public sealed class TransactionPostedHandler(
                 envelope.PeriodEndUtc,
                 timeProvider.GetUtcNow()
                 ));
-            
+
             return outgoing;
         }
 
@@ -64,13 +70,13 @@ public sealed class TransactionPostedHandler(
             logger.LogWarning("Envelope with Id '{EnvelopeId}' {Action} rejected: '{ErrorCode}'.", message.EnvelopeId, action, result.Error.Code);
 
             outgoing.Add(new EnvelopeOverspentEvent(
-                message.TransactionId, 
-                message.SpaceId, 
-                message.EnvelopeId, 
-                message.Amount, 
+                message.TransactionId,
+                message.SpaceId,
+                message.EnvelopeId,
+                message.Amount,
                 envelope.Allocated,
                 envelope.Spent,
-                envelope.Remaining, 
+                envelope.Remaining,
                 timeProvider.GetUtcNow()));
 
             return outgoing;

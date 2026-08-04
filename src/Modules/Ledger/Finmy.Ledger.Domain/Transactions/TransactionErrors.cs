@@ -59,4 +59,19 @@ public static class TransactionErrors
             $"Cannot spend {attemptedAmount:C}. Only {remaining:C} is remaining.",
             ErrorType.Conflict);
     }
+
+    public static readonly Error IdempotencyKeyTooLong = new (
+        "Ledger.IdempotencyKeyTooLong",
+        "Idempotency key must not exceed 255 characters.",
+        ErrorType.Validation);
+
+    public static readonly Error IdempotencyKeyReused = new (
+        "Ledger.IdempotencyKeyReused",
+        "Idempotency key has already been used.",
+        ErrorType.Unprocessable);
+
+    public static readonly Error RequestInProgress = new(
+        "Ledger.RequestInProgress",
+        "Request is already in progress.",
+        ErrorType.Conflict);
 }

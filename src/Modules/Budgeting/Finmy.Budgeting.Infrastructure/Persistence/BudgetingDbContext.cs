@@ -11,6 +11,7 @@ public sealed class BudgetingDbContext(DbContextOptions<BudgetingDbContext> opti
     public DbSet<Envelope> Envelopes { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Receipt> Receipts { get; set; }
+    public DbSet<ProcessedTransaction> ProcessedTransactions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -48,5 +49,13 @@ public sealed class BudgetingDbContext(DbContextOptions<BudgetingDbContext> opti
         builder.Entity<Receipt>().HasIndex(x => x.ObjectKey).IsUnique();
 
         #endregion Receipt
+
+        #region ProcessedTransaction
+
+        builder.Entity<ProcessedTransaction>().Property(x => x.Amount).HasPrecision(18, 2);
+
+        builder.Entity<ProcessedTransaction>().HasKey(x => x.TransactionId);
+
+        #endregion ProcessedTransaction
     }
 }

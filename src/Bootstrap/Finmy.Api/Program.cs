@@ -52,9 +52,13 @@ builder.Host.UseWolverine(opts =>
     opts.PersistMessagesWithPostgresql(connectionString!, "wolverine");
     opts.Policies.AutoApplyTransactions();
     opts.Policies.UseDurableLocalQueues();
+
     opts.Policies.OnException<DbUpdateConcurrencyException>()
         .RetryWithCooldown(100.Milliseconds(), 250.Milliseconds(), 500.Milliseconds())
         .Then.MoveToErrorQueue();
+    opts.Policies.OnException<DbUpdateException>()
+        .Discard();
+
     opts.MultipleHandlerBehavior = MultipleHandlerBehavior.Separated;
     opts.Durability.MessageIdentity = MessageIdentity.IdAndDestination;
 });
