@@ -49,16 +49,17 @@ A personal project under active construction, on its way to a real deployment bu
   - **Realtime**: a strongly-typed `Hub<IEnvelopeClient>` at `/hubs/envelopes`, one group per envelope, pushing `EnvelopeUpdated`, `EnvelopeAlert` and `EnvelopeDeleted`. The Application layer only knows the `IEnvelopeRealtimeNotifier` port, not SignalR.
   - **Balance and overspend protection**: `Envelope` holds `Spent`, computes `Remaining` from `Allocated - Spent`, and mutates through `Spend`, `Release` and `Fund`. Spending past the balance returns a domain error rather than going negative.
 - **Ledger**: the `Transaction` aggregate with `TransactionState` (`Posted`, `Reversed`, `Confirmed`), `POST /transactions` answering **202 Accepted** and processing asynchronously, and `GET /transactions/{id}` for status.
-  - **Messaging and outbox**: Wolverine in-process, Dynamic codegen in development and Static elsewhere, message store on the `wolverine` schema, `AddDbContextWithWolverineIntegration` so writing a `Transaction` and enqueuing its message share one transaction. `DbUpdateConcurrencyException` gets its own retry-with-cooldown policy before the message moves to the error queue.
+  - **Messaging and outbox**: Wolverine in-process, Dynamic codegen in development and Auto in production ([ADR-0013](docs/adr/0013-wolverine-auto-codegen-in-production.md)), message store on the `wolverine` schema, `AddDbContextWithWolverineIntegration` so writing a `Transaction` and enqueuing its message share one transaction. `DbUpdateConcurrencyException` gets its own retry-with-cooldown policy before the message moves to the error queue.
   - **Idempotency**: `Idempotency-Key` on `POST /transactions` backed by `IIdempotencyStore`, with a request fingerprint so a reused key carrying a different payload is rejected with 422 rather than silently replayed. On the consumer side, a `ProcessedTransaction` table makes the Budgeting handler idempotent, so a redelivered message does not deduct twice.
 - **Integration events** in `Finmy.Contracts`: `TransactionPostedEvent`, `EnvelopeOverspentEvent`, `EnvelopeBalanceChangedEvent`. The full chain is described under [Transaction write path](#transaction-write-path).
 - **Tests**: unit tests for the Envelope domain (create, update, spend, fund), `EnvelopeService`, cache policy, alert policy, the receipt validator and the Transaction domain; an integration test for the concurrent-spend race running against real Postgres through Testcontainers.
 - `Result<T>`, `Error` and `ErrorType` in SharedKernel, a `GlobalExceptionHandler` returning ProblemDetails without leaking stack traces, and `ValidationFilter<T>` with FluentValidation rejecting bad input at the endpoint.
 - OpenAPI plus Scalar UI in Development.
-- Docker Compose for the dependencies: PostgreSQL 17, Redis 8, MinIO.
-- Eleven ADRs plus `docs/naming-conventions.md`, and `docs/TECH-DEBT.md` listing known gaps.
+- Docker Compose for the whole system: PostgreSQL 17, Redis 8, MinIO, a one-shot migration service, and the API itself. `git clone` then `docker compose up` brings up a working system with no manual steps.
+- A multi-stage Dockerfile publishing a non-root, framework-dependent image, and GitHub Actions for build, test, architecture tests, coverage, CodeQL and a vulnerable-package gate, with a release workflow pushing tagged images to GHCR.
+- Thirteen ADRs plus `docs/naming-conventions.md`, and `docs/TECH-DEBT.md` listing known gaps.
 
-**Not built yet:** Space, Account, Member and per-Space authorization; CSV statement import with deduplication; a durable transaction status store (still in memory, so restarting loses it); Serilog and OpenTelemetry; NetArchTest architecture tests; a Dockerfile for the API; CI on GitHub Actions; rate limiting and API versioning.
+**Not built yet:** Space, Account, Member and per-Space authorization; CSV statement import with deduplication; a durable transaction status store (still in memory, so restarting loses it); Serilog and OpenTelemetry; rate limiting and API versioning.
 
 Endpoints in Budgeting and Ledger are currently unauthenticated. That is a known gap, tracked as item 1 in [TECH-DEBT.md](docs/TECH-DEBT.md), and it is fixed before any public deployment.
 
@@ -167,28 +168,39 @@ Quality gates: .NET analyzers, SonarAnalyzer, Roslynator, NetArchTest, and code 
 
 ### Running
 
-The API is not containerised yet, so compose brings up the dependencies while the API runs from source.
+`docker compose up` brings up the whole system: PostgreSQL, Redis, MinIO, a one-shot `migrate` service that applies every module's EF migrations, then the API itself. No `.env` file is required; every value has a development default baked into the compose file.
 
 ```bash
 git clone https://github.com/tthanhtung92/finmy.git
 cd finmy
 
-# create .env at the repo root from the template
+docker compose -f docker/docker-compose.yml up -d --build
+
+# API:            http://localhost:8080/health
+# MinIO console:   http://localhost:9001
+```
+
+`api` runs with `ASPNETCORE_ENVIRONMENT=Production`, exercising the same Wolverine codegen path described in [ADR-0013](docs/adr/0013-wolverine-auto-codegen-in-production.md). Scalar and the raw OpenAPI document are only mapped in Development, so neither is reachable through this path.
+
+To override any default (a real MinIO or Postgres password, for instance), copy `.env.example` to `.env` and pass `--env-file .env` alongside `-f docker/docker-compose.yml`.
+
+Tagged releases publish to `ghcr.io/tthanhtung92/finmy`.
+
+For pgAdmin and RedisInsight alongside Postgres and Redis, use `docker/docker-compose.local.yml` instead; it does not currently run the API (see `docs/TECH-DEBT.md`).
+
+### Running from source
+
+For local development with Scalar and hot reload, run the dependencies through compose and the API from the .NET CLI:
+
+```bash
+docker compose -f docker/docker-compose.yml up -d postgres redis minio
+
+# create .env at the repo root from the template, then set the connection
+# strings and the Jwt signing key through User Secrets (all three DBs and
+# the MinIO credentials ship empty in appsettings.json)
 cp .env.example .env
-
-# bring up PostgreSQL, Redis and MinIO
-docker compose -f docker/docker-compose.yml --env-file .env up -d
-```
-
-The three connection strings (`IdentityDb`, `BudgetingDb`, `LedgerDb`) and the MinIO credentials are empty in `appsettings.json`; supply them through the host's User Secrets:
-
-```bash
 dotnet user-secrets set "ConnectionStrings:IdentityDb" "<connection string>" --project src/Bootstrap/Finmy.Api
-```
 
-Migrations do not run at startup, so apply them per module:
-
-```bash
 dotnet ef database update -p src/Modules/Identity/Finmy.Identity.Infrastructure -s src/Bootstrap/Finmy.Api
 dotnet ef database update -p src/Modules/Budgeting/Finmy.Budgeting.Infrastructure -s src/Bootstrap/Finmy.Api
 dotnet ef database update -p src/Modules/Ledger/Finmy.Ledger.Infrastructure -s src/Bootstrap/Finmy.Api
@@ -196,12 +208,9 @@ dotnet ef database update -p src/Modules/Ledger/Finmy.Ledger.Infrastructure -s s
 dotnet run --project src/Bootstrap/Finmy.Api
 
 # Scalar API docs: http://localhost:5079/scalar
-# MinIO console:   http://localhost:9001
 ```
 
 Wolverine's tables on the `wolverine` schema are created at startup and need no migration.
-
-For pgAdmin and RedisInsight alongside, use `docker/docker-compose.local.yml`.
 
 ---
 
@@ -290,6 +299,8 @@ Significant decisions are recorded as ADRs:
 - [ADR-0009: An int `Version` column managed by the domain as the concurrency token, not `xmin`](docs/adr/0009-self-managed-version-concurrency-token.md)
 - [ADR-0010: Budgeting owns the envelope balance; overspend protection is eventually consistent](docs/adr/0010-single-writer-envelope-balance.md)
 - [ADR-0011: Recording a transaction is an async 202 Accepted with a status resource](docs/adr/0011-async-request-reply-202.md)
+- [ADR-0012: Stay a modular monolith through the production phases; extract Identity first if a split becomes necessary](docs/adr/0012-defer-microservice-split.md)
+- [ADR-0013: Run production Wolverine handlers with `TypeLoadMode.Auto`, not `Static`](docs/adr/0013-wolverine-auto-codegen-in-production.md)
 
 ---
 

@@ -36,6 +36,15 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 |---|---|---|
 | 14 | **Untested hypothesis:** if `AutoApplyTransactions()` picks up a handler in a module registered with a plain `AddDbContext` rather than `AddDbContextWithWolverineIntegration`, the middleware may call `SaveChangesAsync` without enrolling that `DbContext` in the outbox. If so, dual-write returns while the build stays green. Still open, though narrower now: the HTTP tests fail when `AutoApplyTransactions()` is removed, so the policy itself is covered. What is not covered is a module wired the wrong way, and there is no third module with a handler to write that case against. | 6 |
 
+## Packaging and local tooling
+
+| # | Debt | Phase |
+|---|---|---|
+| 15 | **`docker/docker-compose.yml` ships a development-only `Jwt__SigningKey` default in a tracked file**, so `docker compose up` works with no `.env` at all. Fine for a laptop; a real deployment needs a real secret supplied through the environment, which is Phase 5's Sealed Secrets or SOPS work, not this file. | 5 |
+| 16 | **The `migrate` compose service is a single, unlocked writer.** `dotnet ef database update` takes EF's own migration lock, so one instance racing another mostly resolves itself, but nothing coordinates the case where two nodes start a rolling deploy at once. It is the smallest thing that satisfies `docker compose up` today; the real multi-replica migration strategy is the open item already listed under Phase 3 above. | 3 |
+| 17 | **`docker/docker-compose.local.yml` is a standalone duplicate of `docker-compose.yml`, not an override layer**, so it drifted out of sync the moment `api` and `migrate` were added to the base file. It also maps pgadmin to host port 8080, which `api` now uses, so the two compose files cannot run together as they stand. | |
+| 18 | **The production image ships Roslyn.** `TypeLoadMode.Auto` ([ADR-0013](adr/0013-wolverine-auto-codegen-in-production.md)) generates handler wrappers at runtime when no pre-built types are on disk, so `WolverineFx.RuntimeCompilation` has to be in the image. Baking `codegen write` output in at build time would drop it, at the cost of a two-pass build; worth it only if image size or cold start become measured problems. | 5 |
+
 ## Notes worth keeping, not debt
 
 - **`Remaining` is a computed property with no database column.** It cannot appear directly in a LINQ `WHERE` or `ORDER BY`; write `e.Allocated - e.Spent` instead.

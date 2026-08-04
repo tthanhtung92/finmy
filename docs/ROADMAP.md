@@ -50,7 +50,7 @@ Two constraints worth stating explicitly:
 
 **The 2025 licensing wave.** MediatR, AutoMapper, MassTransit, FluentAssertions and Moq all moved to commercial licenses. This project picked MIT-licensed replacements deliberately; see [ADR-0003](adr/0003-avoid-commercial-libraries.md).
 
-**Wolverine codegen mode.** The default is Dynamic, which compiles handlers with Roslyn at startup and is convenient in development. Production images use Static codegen to avoid recompiling on every cold start and to drop Roslyn's memory overhead.
+**Wolverine codegen mode.** Development uses Dynamic, which compiles handlers with Roslyn at startup. Production uses Auto, which loads pre-built handler types when they exist on disk and falls back to generating them the same way Dynamic does otherwise; see [ADR-0013](adr/0013-wolverine-auto-codegen-in-production.md) for why Static was tried first and rejected.
 
 **Money** is stored as `decimal`, with rounding handled explicitly.
 
