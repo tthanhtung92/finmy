@@ -485,6 +485,9 @@ $RECYCLE.BIN/
 CLAUDE.local.md
 .claude/
 
+# Obsidian
+.obsidian/
+
 # Temp
 temp/
 
