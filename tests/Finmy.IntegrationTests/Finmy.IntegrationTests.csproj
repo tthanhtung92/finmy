@@ -22,16 +22,6 @@
     <PackageReference Include="WolverineFx" />
   </ItemGroup>
 
-  <!--
-    Wolverine generates handler wrappers with Roslyn when GeneratedCodeMode is Dynamic.
-    Finmy.Api only references WolverineFx.RuntimeCompilation in Debug, so a Release run
-    of these tests has no code generator and the host dies at startup. Referencing it
-    here puts the assembly in the test output for both configurations.
-  -->
-  <ItemGroup>
-    <PackageReference Include="WolverineFx.RuntimeCompilation" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\Bootstrap\Finmy.Api\Finmy.Api.csproj" />
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Domain\Finmy.Budgeting.Domain.csproj" />

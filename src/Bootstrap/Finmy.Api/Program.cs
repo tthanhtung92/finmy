@@ -42,7 +42,10 @@ builder.Services.AddResponseCompression(options =>
 });
 builder.Services.CritterStackDefaults(x =>
 {
-    x.Production.GeneratedCodeMode = TypeLoadMode.Static;
+    // Static needs a `codegen write` pass baked into the image or the host throws
+    // ExpectedTypeMissingException on the first handler invocation; see ADR-0013.
+    // Auto loads pre-built types when present and falls back to generating them.
+    x.Production.GeneratedCodeMode = TypeLoadMode.Auto;
     x.Development.GeneratedCodeMode = TypeLoadMode.Dynamic;
 });
 

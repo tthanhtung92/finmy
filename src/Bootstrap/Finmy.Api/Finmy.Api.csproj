@@ -31,9 +31,12 @@
     <PackageReference Include="WolverineFx" />
     <PackageReference Include="WolverineFx.Postgresql" />
     <PackageReference Include="WolverineFx.EntityFrameworkCore" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <!--
+      Unconditional: Production.GeneratedCodeMode is Auto (see Program.cs and ADR-0013),
+      which falls back to generating handler wrappers with Roslyn when no pre-built types
+      are on disk. Without this package that fallback throws ExpectedTypeMissingException
+      on the first handler invocation.
+    -->
     <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 
