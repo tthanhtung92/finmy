@@ -48,7 +48,7 @@ That has one sharp edge. The old VSTest `--filter "FullyQualifiedName~X"` is sti
 
 `describe` only reports at assembly level and does not list handlers; use `describe-handlers` for that.
 
-`dotnet ef` warns that the tools (`10.0.9`) trail the runtime (`10.0.10`). Harmless so far; `dotnet tool update --global dotnet-ef` clears it.
+`dotnet-ef` is pinned to `10.0.10` in `.config/dotnet-tools.json`, matching the EF runtime. Run `dotnet tool restore` once after cloning; the local manifest takes precedence over any global install, so the version-skew warning does not come back.
 
 Infrastructure (Postgres, Redis, MinIO) runs via `docker compose --env-file .env -f docker/docker-compose.yml up -d`. The `--env-file .env` is required: the compose files live in `docker/` but `.env` sits at the repo root, so without it every variable resolves empty. `docker/docker-compose.local.yml` is the same stack plus pgadmin and redisinsight.
 
