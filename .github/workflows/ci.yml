@@ -54,3 +54,10 @@ jobs:
       # 52% line / 48% branch floor.
       - shell: pwsh
         run: ./scripts/coverage.ps1
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: TestResults/*.cobertura.xml
+          retention-days: 5
