@@ -1,0 +1,17 @@
+.git
+.github
+.vs
+.claude
+.obsidian
+.postman
+bin
+obj
+tests
+docs
+bench
+scripts
+temp
+TestResults
+*.md
+.env
+.env.example
