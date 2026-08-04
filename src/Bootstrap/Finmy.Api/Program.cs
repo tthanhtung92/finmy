@@ -83,3 +83,17 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/health", () => "Healthy!");
 
 return await app.RunJasperFxCommands(args);
+
+/// <summary>
+/// Top-level statements generate an internal Program, which WebApplicationFactory&lt;T&gt; cannot
+/// see from another assembly. This declaration is what lets Finmy.IntegrationTests drive the
+/// real host over HTTP instead of newing up a DbContext directly.
+/// </summary>
+public partial class Program
+{
+    // Never constructed. It exists only so the class is not a bag of static members with a
+    // public constructor, and WebApplicationFactory<T> rules out making the class static.
+    protected Program()
+    {
+    }
+}

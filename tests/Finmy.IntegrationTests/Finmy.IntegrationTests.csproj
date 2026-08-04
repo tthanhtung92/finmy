@@ -13,14 +13,33 @@
     <PackageReference Include="xunit.v3.mtp-v2" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.Redis" />
+    <PackageReference Include="Testcontainers.Minio" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="WolverineFx" />
+  </ItemGroup>
+
+  <!--
+    Wolverine generates handler wrappers with Roslyn when GeneratedCodeMode is Dynamic.
+    Finmy.Api only references WolverineFx.RuntimeCompilation in Debug, so a Release run
+    of these tests has no code generator and the host dies at startup. Referencing it
+    here puts the assembly in the test output for both configurations.
+  -->
+  <ItemGroup>
+    <PackageReference Include="WolverineFx.RuntimeCompilation" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Bootstrap\Finmy.Api\Finmy.Api.csproj" />
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Domain\Finmy.Budgeting.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Infrastructure\Finmy.Budgeting.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Finmy.Identity.Infrastructure\Finmy.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ledger\Finmy.Ledger.Application\Finmy.Ledger.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Ledger\Finmy.Ledger.Infrastructure\Finmy.Ledger.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\Finmy.Contracts\Finmy.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
