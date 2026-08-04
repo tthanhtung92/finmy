@@ -481,21 +481,14 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Claude
-CLAUDE.md
+# Claude — CLAUDE.md is tracked; per-machine overrides and local config are not
 CLAUDE.local.md
 .claude/
-
-# Obsidian
-.obsidian/
 
 # Temp
 temp/
 
-# Guides = tài liệu học tập local-only, không track (mỗi máy giữ bản riêng)
-docs/guides/
-
-# Superpowers = doc plugin sinh ra (spec brainstorming...), local-only, không track
+# Superpowers = plugin-generated brainstorm specs, local only
 docs/superpowers/
 
 # Postman
