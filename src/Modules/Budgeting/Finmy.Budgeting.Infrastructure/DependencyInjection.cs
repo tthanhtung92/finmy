@@ -1,4 +1,4 @@
-using Amazon.Runtime;
+﻿using Amazon.Runtime;
 using Amazon.S3;
 
 using Finmy.Budgeting.Application.Abstractions;
@@ -35,21 +35,21 @@ public static class DependencyInjection
 
             var config = new AmazonS3Config
             {
-                // Định tuyến request đến URL tùy chỉnh (Ví dụ: LocalStack hoặc MinIO)
+                // Route requests to a custom URL (LocalStack or MinIO, for example)
                 ServiceURL = options.Endpoint,
 
-                // Bắt buộc cho LocalStack/MinIO: Chuyển URL từ dạng bucket.domain sang domain/bucket
+                // Required for LocalStack and MinIO: use domain/bucket URLs instead of bucket.domain
                 ForcePathStyle = true,
 
-                // Chỉ định vùng mã hóa chữ ký xác thực (AWS4), không bị ghi đè như RegionEndpoint
+                // Pins the region used for AWS4 signature signing; unlike RegionEndpoint it is not overridden
                 AuthenticationRegion = "us-east-1",
 
-                // SDK chỉ tính checksum khi thao tác thật sự bắt buộc
+                // Have the SDK compute checksums only where the operation actually requires them
                 RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
                 ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
             };
 
-            // Khởi tạo client S3 dưới dạng Singleton để tái sử dụng connection pool
+            // Register the S3 client as a singleton so the connection pool is reused
             return new AmazonS3Client(new BasicAWSCredentials(options.AccessKey, options.SecretKey), config);
         });
         services.AddSingleton<IReceiptStorage, S3ReceiptStorage>();

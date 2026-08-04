@@ -190,11 +190,11 @@
 </head>
 <body>
     <h1>Envelope Live Demo</h1>
-    <div class="sub">Theo dõi trạng thái envelope theo thời gian thực qua SignalR</div>
+    <div class="sub">Live envelope state over SignalR</div>
 
     <div id="statusBadge" class="status disconnected">
         <span class="dot"></span>
-        <span id="statusText">Chưa kết nối</span>
+        <span id="statusText">Not connected</span>
     </div>
 
     <div class="row">
@@ -204,18 +204,18 @@
 
     <div class="panels">
         <div class="panel">
-            <h2>Envelopes đang theo dõi</h2>
+            <h2>Watched envelopes</h2>
             <table>
                 <thead>
-                    <tr><th>ID</th><th>Tên</th><th>Đã phân bổ</th><th>Đã tiêu</th><th>Còn lại</th><th></th></tr>
+                    <tr><th>ID</th><th>Name</th><th>Allocated</th><th>Spent</th><th>Remaining</th><th></th></tr>
                 </thead>
                 <tbody id="envelopeBody"></tbody>
             </table>
-            <div id="emptyState" class="empty">Chưa theo dõi envelope nào.</div>
+            <div id="emptyState" class="empty">No envelopes watched yet.</div>
         </div>
 
         <div class="panel">
-            <h2>Nhật ký sự kiện</h2>
+            <h2>Event log</h2>
             <div id="log"></div>
         </div>
     </div>
@@ -246,7 +246,7 @@
 
         function addLog(tag, message, variant) {
             const entry = document.createElement("div");
-            // giữ tương thích ngược: addLog(tag, message, true) vẫn được hiểu là "del"
+            // Backwards compatible: addLog(tag, message, true) still means the "del" variant
             const variantClass = variant === true ? "del" : (variant || "");
             entry.className = "log-entry" + (variantClass ? " " + variantClass : "");
             const time = new Date().toLocaleTimeString();
@@ -270,7 +270,7 @@
                             <td>${state.allocated ?? ""}</td>
                             <td>${state.spent ?? ""}</td>
                             <td>${state.remaining ?? ""}</td>
-                            <td>${state.deleted ? "đã xoá" : ""}</td>
+                            <td>${state.deleted ? "deleted" : ""}</td>
                         `;
                 envelopeBody.appendChild(tr);
             }
@@ -280,7 +280,7 @@
             // ve lai: state.id, state.name, state.allocated
             const existing = envelopes.get(state.id) || {};
             envelopes.set(state.id, { ...existing, ...state, deleted: false });
-            addLog("EnvelopeUpdated", `#${state.id} "${state.name}" — còn lại: ${state.remaining}`);
+            addLog("EnvelopeUpdated", `#${state.id} "${state.name}" remaining: ${state.remaining}`);
             render();
         });
 
@@ -293,51 +293,51 @@
                 envelopes.set(id, { id, deleted: true });
             }
             watchedIds.delete(id);
-            addLog("EnvelopeDeleted", `#${id} đã bị xoá`, true);
+            addLog("EnvelopeDeleted", `#${id} was deleted`, true);
             render();
         });
 
         connection.on("EnvelopeAlert", (alert) => {
-            // alert.level: 0 = sắp cạn, 1 = đã vượt
+            // alert.level: 0 = running low, 1 = overspent
             const isExceeded = alert.level === 1;
-            const levelText = isExceeded ? "ĐÃ VƯỢT HẠN MỨC" : "SẮP CẠN";
+            const levelText = isExceeded ? "OVER BUDGET" : "RUNNING LOW";
             const variant = isExceeded ? "danger" : "warn";
             const attemptedText = alert.attemptedAmount != null
-                ? ` (số tiền định chi: ${alert.attemptedAmount})`
+                ? ` (attempted amount: ${alert.attemptedAmount})`
                 : "";
             addLog(
                 "EnvelopeAlert",
-                `#${alert.id} — ${levelText} — còn lại: ${alert.remaining} / đã tiêu: ${alert.spent} / hạn mức: ${alert.allocated}${attemptedText}`,
+                `#${alert.id} ${levelText} remaining: ${alert.remaining} / spent: ${alert.spent} / allocated: ${alert.allocated}${attemptedText}`,
                 variant
             );
         });
 
         connection.onreconnecting(() => {
-            setStatus("connecting", "Đang kết nối lại…");
+            setStatus("connecting", "Reconnecting...");
         });
 
         connection.onreconnected(async () => {
-            setStatus("connected", "Đã kết nối");
-            addLog("SignalR", "Kết nối lại thành công, đăng ký lại các envelope đang theo dõi");
+            setStatus("connected", "Connected");
+            addLog("SignalR", "Reconnected, re-subscribing to watched envelopes");
             for (const id of watchedIds) {
                 try {
                     await connection.invoke("WatchEnvelope", id);
                 } catch (err) {
-                    addLog("Error", `Không thể re-watch #${id}: ${err}`);
+                    addLog("Error", `Could not re-watch #${id}: ${err}`);
                 }
             }
         });
 
         connection.onclose(() => {
-            setStatus("disconnected", "Mất kết nối");
+            setStatus("disconnected", "Disconnected");
         });
 
         async function ensureStarted() {
             if (connection.state === signalR.HubConnectionState.Disconnected) {
-                setStatus("connecting", "Đang kết nối…");
+                setStatus("connecting", "Connecting...");
                 await connection.start();
-                setStatus("connected", "Đã kết nối");
-                addLog("SignalR", "Kết nối thành công");
+                setStatus("connected", "Connected");
+                addLog("SignalR", "Connected");
             }
         }
 
@@ -345,7 +345,7 @@
             await ensureStarted();
             await connection.invoke("WatchEnvelope", envelopeId);
             watchedIds.add(envelopeId);
-            addLog("SignalR", `Bắt đầu theo dõi envelope #${envelopeId}`);
+            addLog("SignalR", `Now watching envelope #${envelopeId}`);
         }
 
         watchBtn.addEventListener("click", async () => {
@@ -357,7 +357,7 @@
                 await watch(envelopeId);
                 envelopeInput.value = "";
             } catch (err) {
-                addLog("Error", `Không thể watch #${envelopeId}: ${err}`);
+                addLog("Error", `Could not watch #${envelopeId}: ${err}`);
             } finally {
                 watchBtn.disabled = false;
             }

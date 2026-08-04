@@ -32,7 +32,7 @@ public sealed class EnvelopeService(
         if (result.IsFailure)
             return result.Error;
 
-        envelopeRepository.Add(result.Value); // Thao tác trong RAM, hứa thêm trước khi SaveChangesAsync
+        envelopeRepository.Add(result.Value); // In-memory only; the row is inserted on SaveChangesAsync
 
         await envelopeRepository.SaveChangesAsync(cancellationToken);
 
@@ -181,7 +181,7 @@ public sealed class EnvelopeService(
         var monthStartUtc = new DateTimeOffset(year, month, 1, 0, 0, 0, TimeSpan.Zero);
         var monthEndUtc = monthStartUtc.AddMonths(1);
 
-        // D2: Bắt cả 2 chữ số của tháng => Tháng "07" thay vì "7"
+        // D2: match both month digits, so "07" rather than "7"
         var cacheKey = $"{BudgetingCachePolicy.EnvelopeSummaryKeyPrefix}:y{year}:m{month:D2}";
 
         var result = await cache.GetOrCreateAsync(

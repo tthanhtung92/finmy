@@ -41,12 +41,12 @@ public static class ReceiptFileValidator
         while (total < buffer.Length)
         {
             int n = content.Read(buffer[total..]);
-            if (n == 0) break; // hết stream (file ngắn hơn 8 byte)
+            if (n == 0) break; // end of stream (file shorter than 8 bytes)
             total += n;
         }
 
         if (content.CanSeek)
-            content.Position = 0; // trả con trỏ về đầu để tầng sau còn đọc lại được
+            content.Position = 0; // rewind so the next layer can still read the stream
 
         return total;
     }

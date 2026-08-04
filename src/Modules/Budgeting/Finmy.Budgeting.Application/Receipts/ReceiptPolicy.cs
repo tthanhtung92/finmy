@@ -2,7 +2,7 @@
 
 public sealed class ReceiptPolicy
 {
-    // 1) Content type cho phép — so sánh không phân biệt hoa thường
+    // 1) Allowed content types, compared case-insensitively
     public static readonly IReadOnlySet<string> AllowedContentTypes =
         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -10,10 +10,10 @@ public sealed class ReceiptPolicy
             "image/png",
         };
 
-    // 2) Kích thước tối đa (5 MB)
+    // 2) Maximum size (5 MB)
     public const long MaxSizeBytes = 5 * 1024 * 1024;
 
-    // 3) Bảng magic bytes theo content type
+    // 3) Magic bytes per content type
     private static readonly Dictionary<string, byte[]> MagicBytes =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -21,7 +21,7 @@ public sealed class ReceiptPolicy
             ["image/png"] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A],
         };
 
-    // 4) Dựng object key: receipts/{yyyy}/{MM}/{guid v7}{ext}
+    // 4) Object key layout: receipts/{yyyy}/{MM}/{guid v7}{ext}
     public static string BuildObjectKey(string contentType, DateTimeOffset nowUtc)
     {
         var ext = contentType.ToLowerInvariant() switch
@@ -37,7 +37,7 @@ public sealed class ReceiptPolicy
     public static bool IsAllowedContentType(string? contentType) =>
         contentType is not null && AllowedContentTypes.Contains(contentType);
 
-    /// <summary>Kiểm tra vài byte đầu của file có khớp magic bytes của content type không.</summary>
+    /// <summary>Checks whether the leading bytes of the file match the magic bytes for its content type.</summary>
     public static bool MatchesMagicBytes(string contentType, ReadOnlySpan<byte> header)
     {
         if (!MagicBytes.TryGetValue(contentType, out var signature))

@@ -16,12 +16,12 @@ public sealed class Transaction
     public DateTimeOffset? ReversedAtUtc { get; private set; }
     public DateTimeOffset? ConfirmedAtUtc { get; private set; }
 
-    // Constructor rỗng cho EF Core (materialization qua reflection)
+    // Parameterless constructor for EF Core materialisation through reflection
     private Transaction()
     {
     }
 
-    // Constructor có tham số, dùng nội bộ trong Create
+    // Parameterised constructor, used internally by Create
     private Transaction(
         Guid id, Guid spaceId, Guid envelopeId,
         decimal amount, TransactionDirection direction,

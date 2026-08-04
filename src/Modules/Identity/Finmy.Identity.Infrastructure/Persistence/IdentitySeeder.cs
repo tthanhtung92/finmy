@@ -26,7 +26,7 @@ public static class IdentitySeeder
             }
         }
 
-        // Optional Tạo admin mặc định
+        // Optional: create the default admin
         if (optionsAccessor.Value.IsSeedAdmin)
         {
             var adminUserName = optionsAccessor.Value.AdminUserName ?? throw new InvalidOperationException($"AdminUserName is not configured");

@@ -7,22 +7,22 @@ namespace Finmy.Modularity.Extensions;
 public static class ResultExtensions
 {
     /// <summary>
-    /// Chuyển đổi đối tượng Result Generic thành HTTP IResult (ASP.NET Core Minimal APIs).
+    /// Converts a generic Result into an HTTP IResult for ASP.NET Core Minimal APIs.
     /// </summary>
-    /// <typeparam name="T">Kiểu dữ liệu của giá trị thành công.</typeparam>
-    /// <param name="result">Đối tượng kết quả cần kiểm tra.</param>
-    /// <param name="onSuccess">Hàm callback định nghĩa kịch bản xử lý (HTTP Response) khi thành công.</param>
-    /// <returns>Trả về kết quả từ hàm onSuccess nếu thành công; ngược lại trả về lỗi chuẩn ProblemDetails.</returns>
+    /// <typeparam name="T">Type of the success value.</typeparam>
+    /// <param name="result">The result to inspect.</param>
+    /// <param name="onSuccess">Callback producing the HTTP response on success.</param>
+    /// <returns>The result of onSuccess when successful, otherwise a ProblemDetails error.</returns>
     public static IResult Match<T>(this Result<T> result, Func<T, IResult> onSuccess)
     {
-        // Cơ chế rẽ nhánh (Lazy Evaluation): 
-        // - Nếu IsSuccess = true: Chỉ chạy nhánh trái, truyền dữ liệu vào hàm onSuccess (ví dụ: Results.Ok(user)).
-        // - Nếu IsSuccess = false: Bỏ qua hoàn toàn hàm onSuccess, nhảy sang nhánh phải để format và trả về lỗi.
+        // Branching, evaluated lazily:
+        // - IsSuccess true: run the left branch only, passing the value to onSuccess (Results.Ok(user), say).
+        // - IsSuccess false: skip onSuccess entirely and take the right branch to format the error.
         return result.IsSuccess ? onSuccess(result.Value) : result.ToProblemDetails();
     }
 
     /// <summary>
-    /// Overload Match Result không Generic
+    /// Match overload for the non-generic Result
     /// </summary>
     /// <param name="result"></param>
     /// <param name="onSuccess"></param>

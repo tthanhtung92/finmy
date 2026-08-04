@@ -3,8 +3,8 @@
 public static class StringExtensions
 {
     /// <summary>
-    /// Nếu chuỗi rỗng hoặc chỉ có khoảng trắng, trả về null. 
-    /// Ngược lại, trả về chuỗi đã được Trim.
+    /// Returns null when the string is empty or whitespace only.
+    /// Otherwise returns the trimmed string.
     /// </summary>
     public static string? TrimOrNull(this string? value)
     {

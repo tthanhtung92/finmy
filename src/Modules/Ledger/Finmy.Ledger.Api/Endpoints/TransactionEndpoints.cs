@@ -53,7 +53,7 @@ public sealed class TransactionEndpoints
                     : Result.Failure(TransactionErrors.IdempotencyKeyReused).ToProblemDetails();
             }
 
-            // Giữ chỗ cho idempotency key để đảm bảo rằng các request khác với cùng idempotency key sẽ không được xử lý đồng thời
+            // Claim the idempotency key so two concurrent requests with the same key cannot both proceed
             var reserveSuccess = await idempotencyStore.TryReserveAsync(idempotencyKey, request.SpaceId, requestHash, newTransactionId, cancellationToken);
             if (!reserveSuccess)
             {

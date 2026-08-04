@@ -1,4 +1,4 @@
-using Finmy.Identity.Application.Authentication;
+﻿using Finmy.Identity.Application.Authentication;
 using Finmy.Identity.Application.Authentication.Dtos;
 using Finmy.Modularity.Extensions;
 using Finmy.Modularity.Filters;
@@ -31,7 +31,7 @@ public sealed class IdentityCoreEndpoints
     private static async Task<IResult> RegisterAsync(RegisterRequest req, AuthService svc)
     {
         var result = await svc.RegisterAsync(req);
-        // Tạm thời chưa có route cho Users, nhưng trả ra cho đúng chuẩn
+        // No Users route yet, but return the standard shape anyway
         return result.Match(id => Results.Created($"/identity/users/{id}", new { userId = id }));
     }
 

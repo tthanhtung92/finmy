@@ -2,6 +2,6 @@
 
 public static class EnvelopeGroups
 {
-    /// seam: đổi sang group theo Space khi có Space aggregate
+    /// Seam: switch to per-Space groups once the Space aggregate exists
     public static string ForEnvelope(Guid envelopeId) => $"envelope-{envelopeId}";
 }

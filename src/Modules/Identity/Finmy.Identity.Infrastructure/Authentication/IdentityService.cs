@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 
 using Finmy.Identity.Application.Abstractions;
 using Finmy.Identity.Domain.RefreshTokens;
@@ -72,22 +72,22 @@ public class IdentityService(
 
         var dataToken = await dbContext.RefreshTokens.FirstOrDefaultAsync(x => x.TokenHash == rawTokenHash, cancellationToken: cancellationToken);
 
-        // Kiểm tra xem có tồn tại rawTokenHash dưới DB không
+        // Does this token hash exist in the database?
         if (dataToken == null) return null;
 
-        // Kiểm tra xem rawTokenHash đã revoke lần nào chưa
+        // Has it already been revoked?
         if (dataToken.RevokedAt != null)
         {
             await RevokeAll(dataToken.UserId, now, cancellationToken);
             return null;
         }
 
-        // Kiểm tra xem rawTokenHash đã hết hạn chưa
+        // Has it expired?
         if (dataToken.ExpiresAt <= now) return null;
 
         var (newToken, newRefreshToken) = GenerateRefreshToken(dataToken.UserId, ip, now);
 
-        // Sửa cũ - Conditional update atomic
+        // Atomic conditional update: revoke only while it is still active
         var rowAffected = await dbContext.RefreshTokens
             .Where(x => x.Id == dataToken.Id && x.RevokedAt == null)
             .ExecuteUpdateAsync(s => s
@@ -95,14 +95,14 @@ public class IdentityService(
                 .SetProperty(y => y.ReplacedByTokenHash, newRefreshToken.TokenHash)
             , cancellationToken);
 
-        // Check xem có request khác vừa rotate token này trước không?
+        // Zero rows affected means another request rotated this token first
         if (rowAffected == 0)
         {
             await RevokeAll(dataToken.UserId, now, cancellationToken);
             return null;
         }
 
-        // Thêm mới
+        // Issue the replacement
         dbContext.RefreshTokens.Add(newRefreshToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 

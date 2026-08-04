@@ -1,27 +1,27 @@
-// Cấu hình markdownlint-cli2 — linter/formatter mặc định cho file Markdown của repo.
-// Hook PostToolUse (.claude/hooks/format-md.sh) chạy `markdownlint-cli2 --fix` theo cấu hình này.
-// Tài liệu rule: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+// markdownlint-cli2 configuration, the default linter and formatter for Markdown in this repo.
+// The PostToolUse hook (.claude/hooks/format-md.sh) runs `markdownlint-cli2 --fix` against it.
+// Rule reference: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 {
   "config": {
     "default": true,
 
-    // MD013 line-length: docs tiếng Việt viết prose, không hard-wrap theo cột -> tắt.
+    // MD013 line-length: prose docs are not hard-wrapped to a column, so this is off.
     "MD013": false,
 
-    // MD024 no-duplicate-heading: các day-guide lặp tên section ("Mục tiêu", "Verify"...)
-    // ở những nhánh khác nhau -> chỉ cấm trùng heading khi là anh em cùng cấp.
+    // MD024 no-duplicate-heading: the same section name can legitimately appear under
+    // different parents, so only forbid duplicates among siblings.
     "MD024": { "siblings_only": true },
 
-    // MD033 no-inline-html: cho phép vài thẻ HTML hữu ích trong docs (khối <details> gập được).
+    // MD033 no-inline-html: allow the few HTML tags that are useful in docs.
     "MD033": { "allowed_elements": ["details", "summary", "br"] },
 
-    // MD060 table-column-style: padding dấu | trong bảng chỉ là thẩm mỹ, gây nhiễu -> tắt.
+    // MD060 table-column-style: pipe padding in tables is cosmetic and noisy, so this is off.
     "MD060": false
   },
 
-  // Phạm vi khi chạy thủ công `markdownlint-cli2` không kèm đường dẫn.
+  // Scope when `markdownlint-cli2` is run manually with no path argument.
   "globs": ["**/*.md"],
 
-  // Bỏ qua: dependency, file tooling nội bộ (.claude), thư mục build .NET.
+  // Skip dependencies, local tooling files, and .NET build output.
   "ignores": ["**/node_modules/**", ".claude/**", "**/bin/**", "**/obj/**"]
 }

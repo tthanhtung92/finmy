@@ -6,7 +6,7 @@ export default function () {
     if (__ENV.MODE === 'hit') {
         http.get(`${BASE}/envelopes?page=1&pageSize=20`);
     } else {
-        // Nhánh miss sinh một số trang ngẫu nhiên rất lớn trước,
+        // The miss branch asks for a huge random page number so the cache cannot serve it.
         const page = Math.floor(Math.random() * 1000000) + 1;
         http.get(`${BASE}/envelopes?page=${page}&pageSize=20`);
     }

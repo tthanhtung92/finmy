@@ -6,7 +6,7 @@ namespace Finmy.UnitTests.Budgeting;
 
 public class ReceiptFileValidatorTests
 {
-    private const long ValidSize = 1024; // trong hạn
+    private const long ValidSize = 1024; // within the limit
 
     private static MemoryStream StreamOf(params byte[] bytes) => new(bytes);
 
@@ -33,7 +33,7 @@ public class ReceiptFileValidatorTests
     [Fact]
     public void Validate_JpegContentTypeButExeBytes_ReturnsContentMismatch()
     {
-        // Khai image/jpeg nhưng mở đầu là MZ (header .exe) → sniff phải bắt được
+        // Declares image/jpeg but starts with MZ (a .exe header), so sniffing has to catch it
         var content = StreamOf(0x4D, 0x5A);
 
         var result = ReceiptFileValidator.Validate(ValidSize, "image/jpeg", content);

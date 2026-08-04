@@ -25,8 +25,8 @@ public class BudgetingAlertPolicyTests
     [Fact]
     public void IsLowBalance_WithRemainingExactlyAtThreshold_ReturnsFalse()
     {
-        // 20% của 1.000 là 200. Ngưỡng là "< 20%" (strict), nên bằng đúng 200 chưa được coi là thấp.
-        // Nếu ai đó lỡ đổi "<" thành "<=" thì test này sẽ đỏ.
+        // 20% of 1,000 is 200. The threshold is strictly "< 20%", so exactly 200 does not count as low.
+        // If someone changes "<" to "<=", this test turns red.
         var result = BudgetingAlertPolicy.IsLowBalance(allocated: 1_000m, remaining: 200m);
 
         result.ShouldBeFalse();
@@ -37,7 +37,7 @@ public class BudgetingAlertPolicyTests
     [InlineData(-1_000)]
     public void IsLowBalance_WithNonPositiveAllocated_ReturnsFalse(decimal allocated)
     {
-        // Envelope chưa có ngân sách (hoặc dữ liệu lỗi) thì không nên báo "sắp hết tiền".
+        // An envelope with no budget (or corrupt data) should not report "running low".
         var result = BudgetingAlertPolicy.IsLowBalance(allocated, remaining: 0m);
 
         result.ShouldBeFalse();
