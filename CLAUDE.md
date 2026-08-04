@@ -26,9 +26,10 @@ Envelope balance stays in Budgeting by the single-writer rule ([ADR-0010](docs/a
 dotnet build Finmy.slnx                                 # build the whole solution
 dotnet run --project src/Bootstrap/Finmy.Api            # run the host (composition root)
 
-# tests
-dotnet run --project tests/Finmy.UnitTests/Finmy.UnitTests.csproj
-dotnet run --project tests/Finmy.IntegrationTests/Finmy.IntegrationTests.csproj   # needs Docker Desktop
+# tests — integration tests need Docker Desktop
+dotnet test Finmy.slnx                                  # whole suite
+dotnet test tests/Finmy.UnitTests/Finmy.UnitTests.csproj
+dotnet test tests/Finmy.UnitTests/Finmy.UnitTests.csproj -- --filter-class "*EnvelopeSpendTests"
 
 # Wolverine/JasperFx diagnostics — the only verify tier that touches startup without a live DB
 dotnet run --project src/Bootstrap/Finmy.Api -- describe
@@ -41,7 +42,9 @@ dotnet ef migrations add <Name> -p src/Modules/Ledger/Finmy.Ledger.Infrastructur
 dotnet ef database update -p src/Modules/Ledger/Finmy.Ledger.Infrastructure -s src/Bootstrap/Finmy.Api
 ```
 
-**`dotnet test` currently reports "Zero tests ran" and exits 5** even though the suite is green, on both the solution and an explicit `.csproj`. Run the test projects directly with `dotnet run` as shown above until this is diagnosed. The test projects run on **Microsoft Testing Platform** (`xunit.v3.mtp-v2`, `OutputType=Exe`), not VSTest, so the old `--filter "FullyQualifiedName~X"` syntax silently matches nothing; use `--filter-class` / `--filter-method` / `--filter-query`.
+The test projects run on **Microsoft Testing Platform** (`xunit.v3.mtp-v2`, `OutputType=Exe`), not VSTest, and `global.json` opts `dotnet test` into it with `"test": { "runner": "Microsoft.Testing.Platform" }`.
+
+That has one sharp edge. The old VSTest `--filter "FullyQualifiedName~X"` is still accepted, matches nothing, and reports **"Zero tests ran"** with exit code 5, which reads like a broken runner when the filter is what broke. MTP filters go after `--`: `--filter-class`, `--filter-method`, `--filter-query`. Plain `dotnet test` on the solution or on a single `.csproj` runs the whole suite and exits 0.
 
 `describe` only reports at assembly level and does not list handlers; use `describe-handlers` for that.
 
