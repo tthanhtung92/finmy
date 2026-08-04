@@ -387,3 +387,38 @@ dotnet_naming_style.s_camelcase.required_suffix =
 dotnet_naming_style.s_camelcase.word_separator = 
 dotnet_naming_style.s_camelcase.capitalization = camel_case
 
+
+#### Analyzer rules ####
+# Enabled in Directory.Build.props: EnableNETAnalyzers, AnalysisMode=Recommended,
+# EnforceCodeStyleInBuild, plus SonarAnalyzer.CSharp and Roslynator.Analyzers.
+# TreatWarningsAsErrors is on, so every rule left at warning is a build gate.
+# Each entry below that lowers a severity states why.
+
+[*.cs]
+
+# CA1716: "Error" and the Abstractions.Enum namespace collide with reserved words in
+# other .NET languages. This is a C#-only codebase and Error is a load-bearing name
+# in Result<T>; renaming it to satisfy a cross-language rule buys nothing.
+dotnet_diagnostic.CA1716.severity = none
+
+# RCS1194: the standard (), (string) and (string, Exception) exception constructors
+# would let EnvelopeNotFoundException and friends be built without the id they exist
+# to carry. The narrow constructor is the point of these types.
+dotnet_diagnostic.RCS1194.severity = none
+
+# S3453: domain entities such as Category are materialised by EF Core through a
+# private parameterless constructor. Sonar cannot see reflection, so it reads this
+# as a class nobody can instantiate.
+dotnet_diagnostic.S3453.severity = none
+
+# EF Core scaffolds migrations; they are generated code and not ours to style.
+[**/Migrations/*.cs]
+generated_code = true
+
+# Test naming is Method_Condition_Expectation, which is deliberate and unreadable
+# without the underscores. ConfigureAwait(false) is meaningless in xUnit, which has
+# no synchronization context, and [InlineData] arrays cannot be static readonly.
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1861.severity = none

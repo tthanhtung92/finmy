@@ -61,4 +61,9 @@
   <ItemGroup Label="Storage">
     <PackageVersion Include="AWSSDK.S3" Version="4.0.16" />
   </ItemGroup>
+
+  <ItemGroup Label="Analyzers">
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" />
+    <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />
+  </ItemGroup>
 </Project>
