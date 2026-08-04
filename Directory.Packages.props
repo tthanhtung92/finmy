@@ -30,7 +30,7 @@
   <ItemGroup Label="API &amp; OpenAPI">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
     <PackageVersion Include="Microsoft.OpenApi" Version="2.11.0" />
-    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.16" />
+    <PackageVersion Include="Scalar.AspNetCore" Version="2.16.17" />
   </ItemGroup>
 
   <ItemGroup Label="Caching">
@@ -39,10 +39,10 @@
   </ItemGroup>
 
   <ItemGroup Label="Messaging">
-    <PackageVersion Include="WolverineFx" Version="6.22.0" />
-    <PackageVersion Include="WolverineFx.Postgresql" Version="6.22.0" />
-    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.22.0" />
-    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.22.0" />
+    <PackageVersion Include="WolverineFx" Version="6.24.5" />
+    <PackageVersion Include="WolverineFx.Postgresql" Version="6.24.5" />
+    <PackageVersion Include="WolverineFx.EntityFrameworkCore" Version="6.24.5" />
+    <PackageVersion Include="WolverineFx.RuntimeCompilation" Version="6.24.5" />
   </ItemGroup>
 
   <ItemGroup Label="Validation">
@@ -51,7 +51,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Testing">
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageVersion Include="NSubstitute" Version="6.0.0" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
@@ -68,7 +68,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Storage">
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.16" />
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.101.6" />
   </ItemGroup>
 
   <ItemGroup Label="Analyzers">
