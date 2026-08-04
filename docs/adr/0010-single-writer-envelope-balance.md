@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, 2026-07-25. Written down on 2026-08-04, after the fact. The decision was made when the Ledger module was designed and has shaped everything built since, but it only ever lived in day notes. [ADR-0009](0009-concurrency-token-version-tu-quan.md) already cites it as settled without pointing anywhere.
+Accepted, 2026-07-25. Written down on 2026-08-04, after the fact. The decision was made when the Ledger module was designed and has shaped everything built since, but it only ever lived in day notes. [ADR-0009](0009-self-managed-version-concurrency-token.md) already cites it as settled without pointing anywhere.
 
 ## Context
 
@@ -30,7 +30,7 @@ Four consequences follow directly from that choice.
 
 **Overspend protection is eventually consistent.** Ledger writes first, Budgeting checks afterwards and refuses, Ledger reverses. There is a window in which the system is internally inconsistent, and a transaction can exist as recorded but not yet reflected in a balance.
 
-**A rejected transaction is reversed, not deleted**, using `TransactionState` plus a `ReversedAtUtc` timestamp. A ledger that can delete rows loses the ability to reconstruct its own history, and nothing in the system reports that loss. This is not a proper contra entry, since [ADR-0006](0006-pivot-sang-tai-chinh-chia-se.md) settled on single-entry, but it keeps the trail. `Reverse` refuses a second reversal and the handler swallows exactly that error, so a redelivered message is a no-op. The outbox only guarantees at-least-once, so duplicates will happen.
+**A rejected transaction is reversed, not deleted**, using `TransactionState` plus a `ReversedAtUtc` timestamp. A ledger that can delete rows loses the ability to reconstruct its own history, and nothing in the system reports that loss. This is not a proper contra entry, since [ADR-0006](0006-pivot-to-shared-budgeting.md) settled on single-entry, but it keeps the trail. `Reverse` refuses a second reversal and the handler swallows exactly that error, so a redelivered message is a no-op. The outbox only guarantees at-least-once, so duplicates will happen.
 
 **The two kinds of failure take different routes**, and this is the part that is easiest to get wrong. Insufficient funds is a valid business conclusion, so it raises `EnvelopeOverspentEvent` and the other side reverses. A missing envelope is corrupt data, so it throws and the message goes to the dead letter queue. Automatically compensating for the symptom of a bug would hide the bug.
 
@@ -42,4 +42,4 @@ The cost is that "you cannot overspend" is enforced one beat after the request r
 
 The benefit is that the module boundary survives contact with the hardest requirement in the system, and the mechanism generalises. Any future module that needs to react to a transaction subscribes to the same contract instead of reaching into Ledger.
 
-Reversing this decision later is expensive. It determines the shape of the outbox, the consumers, the concurrency token in [ADR-0009](0009-concurrency-token-version-tu-quan.md), and the async `202 Accepted` API in [ADR-0011](0011-async-request-reply-202.md). It is not a local choice.
+Reversing this decision later is expensive. It determines the shape of the outbox, the consumers, the concurrency token in [ADR-0009](0009-self-managed-version-concurrency-token.md), and the async `202 Accepted` API in [ADR-0011](0011-async-request-reply-202.md). It is not a local choice.

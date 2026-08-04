@@ -31,7 +31,7 @@ Finmy lets a group manage shared money the envelope way: income is divided into 
 
 The hard problem is **several people spending from the same nearly-empty envelope at once**: two concurrent transactions must not push the balance below what is left. That part works. The solution is optimistic concurrency on the envelope balance, plus Wolverine's transactional outbox so recording a transaction and publishing its event happen in one transaction. The concurrency token is an `int Version` column the domain increments in every mutating method, mapped with `IsConcurrencyToken()`, deliberately not Postgres `xmin` (reasoning under [Architecture](#architecture)). An integration test runs the two-concurrent-transactions scenario against a real Postgres via Testcontainers.
 
-The repository previously modelled event ticketing; the reason for moving to shared budgeting is in [ADR-0006](docs/adr/0006-pivot-sang-tai-chinh-chia-se.md).
+The repository previously modelled event ticketing; the reason for moving to shared budgeting is in [ADR-0006](docs/adr/0006-pivot-to-shared-budgeting.md).
 
 ---
 
@@ -152,7 +152,7 @@ In use today:
 
 Planned: Mapster, Serilog, OpenTelemetry, NetArchTest, GitHub Actions, Helm on k3s.
 
-> **On licensing:** the project deliberately avoids libraries that moved to commercial licenses in 2025 (MediatR, AutoMapper, MassTransit, Moq, FluentAssertions) and uses equivalent replacements. Details in [ADR-0003](docs/adr/0003-tranh-thu-vien-thuong-mai.md).
+> **On licensing:** the project deliberately avoids libraries that moved to commercial licenses in 2025 (MediatR, AutoMapper, MassTransit, Moq, FluentAssertions) and uses equivalent replacements. Details in [ADR-0003](docs/adr/0003-avoid-commercial-libraries.md).
 
 > **On money:** amounts are stored as `decimal` with rounding handled explicitly. Automatic import from Vietnamese banks is not practical without widespread open banking, so input comes from CSV or statement upload, or manual entry.
 
@@ -281,13 +281,13 @@ Significant decisions are recorded as ADRs:
 
 - [ADR-0001: Modular Monolith instead of microservices](docs/adr/0001-modular-monolith.md)
 - [ADR-0002: Wolverine as mediator, message bus and transactional outbox](docs/adr/0002-wolverine.md)
-- [ADR-0003: Avoiding commercially licensed libraries; Mapster, NSubstitute, Shouldly](docs/adr/0003-tranh-thu-vien-thuong-mai.md)
+- [ADR-0003: Avoiding commercially licensed libraries; Mapster, NSubstitute, Shouldly](docs/adr/0003-avoid-commercial-libraries.md)
 - [ADR-0004: Identity module boundary via Option A (dependency inversion through IIdentityService)](docs/adr/0004-identity-option-a.md)
 - [ADR-0005: JWT short-name claims with IdentityClaimTypes as the source of truth](docs/adr/0005-jwt-short-name-claim.md)
-- [ADR-0006: Moving the domain to shared envelope budgeting](docs/adr/0006-pivot-sang-tai-chinh-chia-se.md)
-- [ADR-0007: Naming conventions for folders, files and namespaces](docs/adr/0007-quy-uoc-dat-ten.md)
-- [ADR-0008: Serving receipt images via presigned URLs with a CDN in front of the origin](docs/adr/0008-cdn-truoc-object-storage.md)
-- [ADR-0009: An int `Version` column managed by the domain as the concurrency token, not `xmin`](docs/adr/0009-concurrency-token-version-tu-quan.md)
+- [ADR-0006: Moving the domain to shared envelope budgeting](docs/adr/0006-pivot-to-shared-budgeting.md)
+- [ADR-0007: Naming conventions for folders, files and namespaces](docs/adr/0007-naming-conventions.md)
+- [ADR-0008: Serving receipt images via presigned URLs with a CDN in front of the origin](docs/adr/0008-cdn-in-front-of-object-storage.md)
+- [ADR-0009: An int `Version` column managed by the domain as the concurrency token, not `xmin`](docs/adr/0009-self-managed-version-concurrency-token.md)
 - [ADR-0010: Budgeting owns the envelope balance; overspend protection is eventually consistent](docs/adr/0010-single-writer-envelope-balance.md)
 - [ADR-0011: Recording a transaction is an async 202 Accepted with a status resource](docs/adr/0011-async-request-reply-202.md)
 

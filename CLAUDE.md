@@ -78,7 +78,7 @@ One process, source split into self-contained **modules** under `src/Modules/`: 
 
 ### Concurrency token
 
-The concurrency token is a plain `int Version` on `Envelope`, incremented by the domain in **every** mutating method and mapped with `IsConcurrencyToken()`. Deliberately **not** Postgres `xmin` / `IsRowVersion()`, which forces hand-editing a bogus `AddColumn` out of the migration and does not survive dump-restore ([ADR-0009](docs/adr/0009-concurrency-token-version-tu-quan.md)). Forgetting an increment silently removes the protection, so a new mutating method needs both `Version++` and a test asserting it.
+The concurrency token is a plain `int Version` on `Envelope`, incremented by the domain in **every** mutating method and mapped with `IsConcurrencyToken()`. Deliberately **not** Postgres `xmin` / `IsRowVersion()`, which forces hand-editing a bogus `AddColumn` out of the migration and does not survive dump-restore ([ADR-0009](docs/adr/0009-self-managed-version-concurrency-token.md)). Forgetting an increment silently removes the protection, so a new mutating method needs both `Version++` and a test asserting it.
 
 ## Conventions
 

@@ -1,38 +1,38 @@
-# Quy ước đặt tên thư mục & file
+# Naming conventions for folders and files
 
-Tài liệu này chốt cách đặt tên thư mục, file, namespace và class trong Finmy. Mục đích: mở một project bất kỳ là đoán được file nằm ở đâu, không phải đi dò. Áp cho mọi module đang có (Identity, Budgeting) và mọi module viết sau (Ledger).
+This document settles how folders, files, namespaces and classes are named in Finmy. The goal is that opening any project makes it possible to guess where a file lives instead of hunting for it. It applies to every existing module and every module written later.
 
-Nền tảng tham khảo: [Framework Design Guidelines của Microsoft](https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/), cách tổ chức feature-folder của [Milan Jovanović](https://milanjovanovic.tech/blog/clean-architecture-folder-structure) và [Anton Martyniuk](https://antondevtips.com/blog/how-to-structure-production-apps-with-vertical-slice-architecture-in-dotnet-in-2026).
+Reference points: Microsoft's [Framework Design Guidelines](https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/), and the feature-folder approach described by [Milan Jovanović](https://milanjovanovic.tech/blog/clean-architecture-folder-structure) and [Anton Martyniuk](https://antondevtips.com/blog/how-to-structure-production-apps-with-vertical-slice-architecture-in-dotnet-in-2026).
 
-## Bảng chốt
+## The table
 
-| Thành phần | Quy tắc | Ví dụ |
-|---|---|---|
+| Element | Rule | Example |
+| --- | --- | --- |
 | Project | `Finmy.{Module}.{Layer}` | `Finmy.Budgeting.Application` |
-| Feature folder | số nhiều theo entity, hoặc noun cho năng lực | `Envelopes/`, `Categories/`, `RefreshTokens/`, `Users/`, `Authentication/` |
-| Port / interface | gom trong `Abstractions/` ở gốc project | `Application/Abstractions/IEnvelopeRepository.cs` |
+| Feature folder | plural after the entity, or a noun for a capability | `Envelopes/`, `Categories/`, `RefreshTokens/`, `Users/`, `Authentication/` |
+| Port or interface | collected in `Abstractions/` at the project root | `Application/Abstractions/IEnvelopeRepository.cs` |
 | DTO (request, response, validator) | `{feature}/Dtos/` | `Envelopes/Dtos/CreateEnvelopeRequest.cs` |
-| Service | số ít + hậu tố `Service` | `EnvelopeService`, `AuthService` |
+| Service | singular, `Service` suffix | `EnvelopeService`, `AuthService` |
 | Endpoints | `{Entity}Endpoints` | `EnvelopeEndpoints` |
 | DbContext | `{Module}DbContext` | `BudgetingDbContext`, `IdentityDbContext` |
-| Persistence | `Persistence/` chứa DbContext, factory, repository | `Infrastructure/Persistence/` |
-| Filter, behavior | gom theo vai trò, không để rơi ở gốc project | `Filters/ValidationFilter.cs` |
+| Persistence | `Persistence/` holds the context, factories and repositories | `Infrastructure/Persistence/` |
+| Filters and behaviours | grouped by role, never loose at the project root | `Filters/ValidationFilter.cs` |
 
-## Tại sao chọn từng cái
+## Why each choice
 
-**`Abstractions/` cho interface.** Microsoft đóng gói interface vào assembly `*.Abstractions` (ví dụ `Microsoft.Extensions.Logging.Abstractions`), nên tên này quen mắt với người đọc .NET. Trước đây repo dùng lẫn cả `Abstractions/` (ở Application) lẫn `Interfaces/` (ở Modularity) — giờ gom về một tên. Tránh `Contracts` vì đã có project `Finmy.Contracts` giữ integration event cross-module, đặt trùng sẽ gây nhầm hai khái niệm khác hẳn nhau.
+**`Abstractions/` for interfaces.** Microsoft packages interfaces into `*.Abstractions` assemblies (`Microsoft.Extensions.Logging.Abstractions`, for instance), so the name reads naturally to a .NET developer. The repo previously mixed `Abstractions/` in Application with `Interfaces/` in Modularity; both are now one name. `Contracts` was avoided because `Finmy.Contracts` already holds cross-module integration events, and reusing the word would conflate two very different concepts.
 
-**Feature folder số nhiều.** Một thư mục `Envelopes/` gom mọi thứ thuộc về envelope: entity, error, service, DTO. Khi cần tách envelope thành service riêng sau này, bê cả folder đi là xong. Số nhiều vì nó chứa nhóm thứ liên quan tới nhiều envelope, không phải một class đơn lẻ. `Authentication/` là ngoại lệ hợp lý: nó là một năng lực, không phải một entity, nên để số ít.
+**Plural feature folders.** An `Envelopes/` folder gathers everything about envelopes: entity, errors, service, DTOs. If envelopes ever need extracting into a separate service, the folder moves as a unit. Plural because it holds a group of related things rather than a single class. `Authentication/` is a reasonable exception: it names a capability, not an entity.
 
-**Class service số ít.** `EnvelopeService` chứ không `EnvelopesService`. Class là một thứ (một service), khác với folder là một nhóm. Đây cũng là nếp đặt tên chung của .NET cho service và handler.
+**Singular service class names.** `EnvelopeService`, not `EnvelopesService`. A class is one thing, whereas a folder is a group. This also matches how .NET names services and handlers generally.
 
-**DbContext bỏ chữ `Module`.** `BudgetingDbContext` gọn hơn `BudgetingModuleDbContext` và vẫn rõ nó thuộc module nào. Riêng Identity, class `IdentityDbContext` của mình kế thừa `IdentityDbContext<TUser, TRole, TKey>` của ASP.NET Core Identity — hai cái trùng tên đơn nhưng khác số tham số generic nên C# phân biệt được, biên dịch không lỗi; danh sách kế thừa ghi rõ tham số generic nên không có chỗ nào mơ hồ.
+**Context names drop `Module`.** `BudgetingDbContext` is shorter than `BudgetingModuleDbContext` and still says which module it belongs to. For Identity our `IdentityDbContext` inherits ASP.NET Core Identity's `IdentityDbContext<TUser, TRole, TKey>`; the two share a simple name but differ in generic arity, so C# distinguishes them and compilation is clean, and the base list spells out the generic parameters so nothing is ambiguous.
 
-**Không để namespace lặp tên module.** Trước đây có `Finmy.Identity.Domain.Identity` và `Finmy.Identity.Infrastructure.Identity` — chữ `Identity` lặp hai lần, đọc rối. Giờ tách theo đúng thứ nó chứa: `RefreshTokens/` cho `RefreshToken`, `Users/` cho `ApplicationUser` và `ApplicationRole`.
+**Namespaces do not repeat the module name.** `Finmy.Identity.Domain.Identity` and `Finmy.Identity.Infrastructure.Identity` repeated `Identity` twice and read badly. They are now split by what they contain: `RefreshTokens/` for `RefreshToken`, `Users/` for `ApplicationUser` and `ApplicationRole`.
 
-**File không nằm trơ ở gốc project.** `ValidationFilter` từng để thẳng ở gốc `Finmy.Modularity`, giờ vào `Filters/`. Mỗi file có một folder nói lên vai trò của nó.
+**No file sits loose at a project root.** `ValidationFilter` used to live directly in `Finmy.Modularity`; it now lives in `Filters/`. Every file gets a folder that states its role.
 
-## Cây một module mẫu
+## A sample module tree
 
 ```text
 Finmy.Budgeting.Domain/
@@ -51,7 +51,6 @@ Finmy.Budgeting.Api/
   BudgetingModule.cs
 ```
 
-## Khi thêm module mới
+## Adding a new module
 
-Theo đúng cây trên. Nếu thấy mình sắp đặt một tên không nằm trong bảng chốt, sửa bảng trước (kèm lý do), rồi mới đặt — để tài liệu luôn là nguồn tra cứu đúng, không phải bản mô tả lạc hậu.
-</content>
+Follow the tree above. If you are about to use a name that is not in the table, change the table first, with the reasoning, and then use the name. That keeps this document a reference rather than an outdated description.

@@ -1,38 +1,40 @@
-# ADR-0004: Ranh giới module Identity theo Option A (Dependency Inversion / IIdentityService)
+# ADR-0004: Identity module boundary via Option A (dependency inversion through IIdentityService)
 
-## Trạng thái
+## Status
 
-Accepted — 2026-07-12
+Accepted, 2026-07-12
 
-## Bối cảnh
+## Context
 
-Module Identity dùng ASP.NET Core Identity (`Microsoft.AspNetCore.Identity.EntityFrameworkCore`). Vướng mắc kiến trúc: handler đăng nhập/đăng ký (ở lớp Application) cần thao tác với `UserManager<ApplicationUser>`, mà `UserManager` và `ApplicationUser` là type dính chặt framework Identity + EF. Đặt chúng ở đâu để không phá hai luật cùng lúc:
+The Identity module uses ASP.NET Core Identity (`Microsoft.AspNetCore.Identity.EntityFrameworkCore`). That creates an architectural snag: login and registration handlers live in the Application layer and need `UserManager<ApplicationUser>`, but `UserManager` and `ApplicationUser` are types welded to the Identity framework and EF. Where they go decides whether two rules survive:
 
-- **Luật DDD:** Domain nên thuần POCO, không dính framework.
-- **Luật phân lớp:** Application không được phụ thuộc Infrastructure (chỉ Infra → Application → Domain).
+- **The DDD rule:** Domain should be plain POCOs with no framework attachment.
+- **The layering rule:** Application must not depend on Infrastructure. Dependencies run Infrastructure to Application to Domain.
 
-Lối compromise quen thuộc là nhét `ApplicationUser` xuống Domain để Application với tới. Nghe xuôi nhưng nó vá layering bằng cách bẩn Domain — chọn hy sinh luật DDD để cứu luật phân lớp.
+The familiar compromise is to push `ApplicationUser` down into Domain so Application can reach it. That sounds reasonable, but it patches layering by contaminating the Domain: it trades the DDD rule away to save the layering rule.
 
-## Các phương án đã cân nhắc
+## Options considered
 
-- **Compromise "entity ở Domain"** — đặt `ApplicationUser` ở Domain cho Application thấy trực tiếp. Đơn giản, nhưng Domain hết thuần POCO (kéo package Identity/EF vào lõi), và về bản chất là đánh đổi một luật lấy luật kia.
+**The "entity in Domain" compromise.** Put `ApplicationUser` in Domain so Application can see it directly. Simple, but the Domain stops being plain POCOs, since it now pulls Identity and EF packages into the core, and the choice amounts to sacrificing one rule for the other.
 
-- **Option A (Dependency Inversion qua `IIdentityService`)** — chèn một abstraction: interface `IIdentityService` khai ở Application, surface toàn primitive; implementation giữ `UserManager` nằm ở Infrastructure. Đây là pattern các hệ thống lớn dùng (Clean Architecture template của Jason Taylor, eShopOnWeb). Không hy sinh luật nào; giá chỉ là một lớp adapter.
+**Option A, dependency inversion through `IIdentityService`.** Insert an abstraction: an `IIdentityService` interface declared in Application with a surface of primitives, and an implementation in Infrastructure that holds `UserManager`. This is what larger systems do (Jason Taylor's Clean Architecture template, eShopOnWeb). Neither rule is sacrificed; the cost is one adapter layer.
 
-## Quyết định
+## Decision
 
-Chúng tôi chọn **Option A**. Cụ thể:
+Option A. Specifically:
 
-- `ApplicationUser` / `ApplicationRole` + `IdentityDbContext` + implementation `IdentityService` đặt ở **`Finmy.Identity.Infrastructure`** — coi auth là hạ tầng.
-- `RefreshToken` là POCO thuần ở **`Finmy.Identity.Domain`**, chỉ giữ `UserId` kiểu `Guid` (id-reference), **không** navigation ngược tới `ApplicationUser`.
-- Interface **`IIdentityService`** đặt ở **`Finmy.Identity.Application`** — abstraction đi lên, surface primitive (`string`/`bool`/`Result` + `userId`), không lộ type Identity.
-- Khóa chính kiểu `Guid`: `ApplicationUser : IdentityUser<Guid>`, `ApplicationRole : IdentityRole<Guid>`, context `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>`.
-- Dùng `AddIdentityCore` (không `AddIdentity`) vì auth đi qua JWT, không cần cookie/UI.
+- `ApplicationUser`, `ApplicationRole`, `IdentityDbContext` and the `IdentityService` implementation live in **`Finmy.Identity.Infrastructure`**, treating auth as infrastructure.
+- `RefreshToken` is a plain POCO in **`Finmy.Identity.Domain`**, holding only a `Guid UserId` as an id reference, with no navigation back to `ApplicationUser`.
+- The **`IIdentityService`** interface lives in **`Finmy.Identity.Application`**, so the abstraction points upward. Its surface is primitives (`string`, `bool`, `Result`, `userId`) and exposes no Identity types.
+- Primary keys are `Guid`: `ApplicationUser : IdentityUser<Guid>`, `ApplicationRole : IdentityRole<Guid>`, context `IdentityDbContext<ApplicationUser, ApplicationRole, Guid>`.
+- `AddIdentityCore` rather than `AddIdentity`, since auth goes through JWT and needs no cookies or UI.
 
-Nguyên tắc gọn: **abstraction đi lên (Application), implementation đi xuống (Infrastructure)**; DI ở Bootstrap mới ráp hai cái lúc chạy.
+The rule in short: abstractions point up into Application, implementations point down into Infrastructure, and DI in the Bootstrap host joins them at runtime.
 
-## Hệ quả
+## Consequences
 
-- Domain thuần POCO tuyệt đối — 0 package Identity/EF; Application không reference Infrastructure. Chiều reference đúng chuẩn: Infra → Application → Domain. Handler inject `IIdentityService`, không hề biết `UserManager` tồn tại. Đây là thứ NetArchTest sẽ kiểm được.
-- Giá phải trả: một lớp adapter (interface + impl) và surface primitive — mỗi nhu cầu Identity mới phải thêm một method vào `IIdentityService`. Chi phí này có thật nhưng nhỏ, và đổi lấy lõi tách hoàn toàn khỏi framework auth.
-- Khóa `Guid` khiến migration `InitialCreate` phải dựng để PK là uuid từ đầu; đổi lại tránh lộ số tuần tự và hợp cho id-reference cross-module sau này.
+The Domain stays strictly POCO with no Identity or EF packages, and Application never references Infrastructure. The reference direction is exactly Infrastructure to Application to Domain. Handlers inject `IIdentityService` and never learn that `UserManager` exists, which is something NetArchTest can verify.
+
+The cost is one adapter layer (interface plus implementation) with a primitive surface, so every new Identity capability adds a method to `IIdentityService`. That cost is real but small, and it buys a core fully detached from the auth framework.
+
+`Guid` keys mean the `InitialCreate` migration has to build uuid primary keys from the start. In exchange, sequential numbers are not exposed and the keys suit cross-module id references later.

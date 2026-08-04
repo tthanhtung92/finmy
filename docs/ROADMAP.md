@@ -10,7 +10,7 @@
 
 This project does not chase feature count. Each backend concept gets a vertical slice that is thin but real, tested, and explainable. A README that explains its architectural decisions well is worth more than fifty CRUD endpoints.
 
-The domain is shared budgeting because the author self-hosts it for an actual group, which is what keeps it honest: the system has a user, so it has to keep working. The full reasoning is in [ADR-0006](adr/0006-pivot-sang-tai-chinh-chia-se.md).
+The domain is shared budgeting because the author self-hosts it for an actual group, which is what keeps it honest: the system has a user, so it has to keep working. The full reasoning is in [ADR-0006](adr/0006-pivot-to-shared-budgeting.md).
 
 Three principles:
 
@@ -48,7 +48,7 @@ As of 2026-08-04 the project is being taken from technical showcase to a product
 
 Two constraints worth stating explicitly:
 
-**The 2025 licensing wave.** MediatR, AutoMapper, MassTransit, FluentAssertions and Moq all moved to commercial licenses. This project picked MIT-licensed replacements deliberately; see [ADR-0003](adr/0003-tranh-thu-vien-thuong-mai.md).
+**The 2025 licensing wave.** MediatR, AutoMapper, MassTransit, FluentAssertions and Moq all moved to commercial licenses. This project picked MIT-licensed replacements deliberately; see [ADR-0003](adr/0003-avoid-commercial-libraries.md).
 
 **Wolverine codegen mode.** The default is Dynamic, which compiles handlers with Roslyn at startup and is convenient in development. Production images use Static codegen to avoid recompiling on every cold start and to drop Roslyn's memory overhead.
 

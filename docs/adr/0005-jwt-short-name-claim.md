@@ -1,40 +1,46 @@
-# ADR-0005: Phát JWT bằng short-name claim với IdentityClaimTypes làm source of truth
+# ADR-0005: Issue JWTs with short-name claims, with IdentityClaimTypes as the source of truth
 
-## Trạng thái
+## Status
 
-Accepted — 2026-07-12
+Accepted, 2026-07-12
 
-## Bối cảnh
+## Context
 
-Module Identity phát JWT access token chứa danh tính (`sub`, `email`) và role. Phải chọn tên claim và bộ handler đọc/ghi token. Có hai lối đặt tên claim trong .NET: bộ `ClaimTypes.*` (di sản WIF, mỗi tên là một URI dài kiểu WS/SAML như `http://schemas.xmlsoap.org/...`) và tên ngắn chuẩn JWT theo RFC 7519 (`sub`, `email`, `jti`, `exp`...). Chọn nhầm hoặc khai không khớp giữa phía phát và phía đọc gây ra lỗi sai lặng — không báo compile, không ném exception, chỉ chạy sai.
+The Identity module issues JWT access tokens carrying identity (`sub`, `email`) and roles. That means choosing claim names and the handler pair that writes and reads tokens. .NET offers two naming schemes: the `ClaimTypes.*` set inherited from WIF, where every name is a long WS or SAML URI such as `http://schemas.xmlsoap.org/...`, and the short RFC 7519 JWT names (`sub`, `email`, `jti`, `exp`). Choosing wrong, or declaring names inconsistently between the issuing and reading sides, produces silent failures: nothing fails to compile, nothing throws, the system simply behaves incorrectly.
 
-Ngoài tên claim, còn hai quyết định đi kèm lộ ra khi dựng generator + cấu hình `AddJwtBearer`: thời điểm hết hạn token phải test được, và signing key thiếu phải chặn sớm.
+Two further decisions surfaced while building the generator and configuring `AddJwtBearer`: token expiry has to be testable, and a missing signing key has to stop the process early.
 
-## Các phương án đã cân nhắc
+## Options considered
 
-- **`ClaimTypes.*`** — quen tay ("cứ dùng `ClaimTypes` cho tiện"), nhưng `ClaimTypes` không hề có member `sub`, còn `ClaimTypes.Email`/`.Role` là URI dài di sản WIF. Token phình, đọc trên jwt.io khó, và lệch chuẩn JWT.
+**`ClaimTypes.*`**, the reflexive choice, except that `ClaimTypes` has no `sub` member at all, and `ClaimTypes.Email` and `ClaimTypes.Role` are long WIF-era URIs. Tokens grow, reading them on jwt.io is painful, and the result diverges from the JWT standard.
 
-- **`System.IdentityModel.Tokens.Jwt` (handler legacy)** — bộ cũ, còn dùng được nhưng đã có handler mới thay thế.
+**`System.IdentityModel.Tokens.Jwt`**, the legacy handler. Still usable, but a newer handler has replaced it.
 
-- **Short-name RFC 7519 qua `JwtRegisteredClaimNames` + `JsonWebTokenHandler`** — tên chuẩn ngắn (`JwtRegisteredClaimNames.Sub` ≡ `"sub"`), handler mới của `Microsoft.IdentityModel.JsonWebTokens`. Token gọn, đúng chuẩn. Đổi lại `Role` không thuộc RFC nên `JwtRegisteredClaimNames` không có — phải tự đặt tên.
+**RFC 7519 short names through `JwtRegisteredClaimNames` plus `JsonWebTokenHandler`**, the modern handler from `Microsoft.IdentityModel.JsonWebTokens`. Compact, standard-conforming tokens. The catch is that `Role` is not part of the RFC, so `JwtRegisteredClaimNames` has no member for it and the name has to be chosen locally.
 
-## Quyết định
+## Decision
 
-Chúng tôi phát claim bằng **short-name JWT**: `sub`/`email` qua `JwtRegisteredClaimNames`, `role` tự đặt short-name `"role"` (vì RFC 7519 không chuẩn hóa role). Dùng `JsonWebTokenHandler` mới, không dùng handler legacy.
+Claims are issued with **short JWT names**: `sub` and `email` through `JwtRegisteredClaimNames`, and `role` as a locally chosen short name, since RFC 7519 does not standardise roles. The modern `JsonWebTokenHandler` is used, not the legacy handler.
 
-Gom tên claim về một static class **`IdentityClaimTypes`** làm source of truth, đặt trong `Authentication/` của Identity.Infrastructure, dùng ở cả nơi phát lẫn nơi đọc:
+Claim names are collected in a static `IdentityClaimTypes` class that acts as the source of truth, placed under `Authentication/` in Identity.Infrastructure and used on both the issuing and reading sides:
 
-- `Sub` / `Email` là **alias tham chiếu** tới `JwtRegisteredClaimNames.*` — không gõ lại literal, nên không đẻ magic string thứ hai.
-- `Role` là literal `"role"` — đây là nơi *duy nhất* literal được phép tồn tại, vì thư viện không cấp hằng cho nó.
+- `Sub` and `Email` are **aliases referencing** `JwtRegisteredClaimNames.*` rather than retyped literals, so no second magic string appears.
+- `Role` is the literal `"role"`. This is the only place a literal is allowed, because the library provides no constant for it.
 
-Vì đã rời mặc định của ASP.NET Core (short-name thay URL dài), phía đọc token phải khai lại cho khớp: set `TokenValidationParameters.RoleClaimType = IdentityClaimTypes.Role`, và `options.MapInboundClaims = false` (đặt trên `options`, không trong `TokenValidationParameters`).
+Having left the ASP.NET Core default (short names instead of long URLs), the reading side has to be told to match: set `TokenValidationParameters.RoleClaimType = IdentityClaimTypes.Role`, and `options.MapInboundClaims = false` on the options object rather than inside `TokenValidationParameters`.
 
-Hai quyết định đi kèm: inject `TimeProvider` thay `DateTime.UtcNow` để tính `Expires`; fail-fast signing key đối xứng ở cả phía phát lẫn phía đọc (thiếu key thì ném lúc khởi động, không bao giờ fallback chuỗi rỗng). Không đẩy `IdentityClaimTypes` lên `SharedKernel`/`Contracts` — tên claim là wire-format nội bộ module Identity, đẩy ra là rò rỉ ranh giới cross-module.
+Two decisions come along with it. Inject `TimeProvider` instead of using `DateTime.UtcNow` to compute `Expires`. Fail fast on the signing key symmetrically, on both the issuing and reading sides: a missing key throws at startup and never falls back to an empty string.
 
-## Hệ quả
+`IdentityClaimTypes` is deliberately not promoted to `SharedKernel` or `Contracts`. Claim names are a wire format internal to the Identity module, and exposing them would leak across a module boundary.
 
-- Token gọn, đúng RFC, đọc trên jwt.io dễ; nhiều role của một user là nhiều claim cùng type `"role"`, thư viện tự gộp thành JSON array khi serialize.
-- Một source of truth cho tên claim, dùng cả nơi phát lẫn nơi validate — sửa một chỗ, không lệch hai nơi.
-- Cạm bẫy phải trả giá cho việc rời mặc định: quên `RoleClaimType` thì `[Authorize(Roles=...)]` luôn 403 dù đúng role; quên `MapInboundClaims = false` thì handler remap `sub` thành `nameidentifier`, `User.FindFirst("sub")` trả null. Cả hai fail lặng, test tay khó thấy — nên phải verify end-to-end.
-- `TimeProvider` cho phép bơm `FakeTimeProvider` để kiểm `exp` xác định, không phụ thuộc đồng hồ máy chạy test.
-- Fail-fast signing key: thiếu config thì app không khởi động được, còn hơn chạy với chữ ký rỗng (validate bằng key rỗng gần như vô hiệu, token giả dễ qua). Xem thêm phần siết bảo mật (validate độ dài key, `ClockSkew`, `ValidAlgorithms`) ở `docs/guides/day-04/07-hardening-bao-mat.md`.
+## Consequences
+
+Tokens are compact, standard-conforming, and readable on jwt.io. A user with several roles produces several claims of type `"role"`, which the library serialises into a JSON array.
+
+There is one source of truth for claim names, used at both issue and validation time, so a change happens in one place and the two sides cannot drift apart.
+
+Leaving the defaults has a price in traps. Forgetting `RoleClaimType` makes `[Authorize(Roles=...)]` return 403 for users who do hold the role. Forgetting `MapInboundClaims = false` lets the handler remap `sub` to `nameidentifier`, so `User.FindFirst("sub")` returns null. Both fail silently and are hard to catch by hand, so they need end-to-end verification.
+
+`TimeProvider` allows injecting a `FakeTimeProvider` to assert `exp` deterministically, independent of the test machine's clock.
+
+Failing fast on the signing key means the app refuses to start without configuration, which beats running with an empty signature: validating against an empty key is close to no validation at all, and forged tokens pass easily.

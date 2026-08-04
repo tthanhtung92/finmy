@@ -1,33 +1,37 @@
-# ADR-0001: Dùng Modular Monolith thay vì microservices
+# ADR-0001: Modular Monolith instead of microservices
 
-## Trạng thái
+## Status
 
-Accepted — 2026-07-12
+Accepted, 2026-07-12.
 
-## Bối cảnh
+Module names in this record predate [ADR-0006](0006-pivot-to-shared-budgeting.md), which replaced the ticketing domain with shared budgeting. `Events` and `Ticketing` became `Budgeting` and `Ledger`. The structural decision itself is unchanged.
 
-Finmy là một project học tập, không phải sản phẩm đầy đủ tính năng. Nó do một người làm, quỹ thời gian 1–4 giờ mỗi ngày, mục tiêu là mỗi khái niệm backend cốt lõi (auth, caching, CDN, realtime, messaging, concurrency) có một vertical slice mỏng nhưng chạy thật và *giải thích được*.
+## Context
 
-Câu hỏi kiến trúc nền: chia hệ thống thế nào để vừa giữ được kỷ luật ranh giới rõ ràng, vừa không chết chìm trong chi phí vận hành của một dev đơn lẻ. Ràng buộc: phải `docker compose up` là chạy trong một lệnh, và ranh giới phải kiểm chứng được bằng máy chứ không dựa vào lời hứa.
+Finmy is built by one person with one to four hours a day. The goal is that each core backend concept (auth, caching, CDN, realtime, messaging, concurrency) gets a thin vertical slice that runs for real and can be explained.
 
-## Các phương án đã cân nhắc
+The foundational question is how to split the system so that boundaries stay disciplined without drowning a single developer in operational overhead. Two constraints: `docker compose up` has to bring the system up in one command, and boundaries have to be machine-checkable rather than promised.
 
-- **Microservices** — mỗi module một service, một database, giao tiếp qua network. Mạnh về scale độc lập và tách deploy, nhưng kéo theo phân tán từ sớm: nhiều repo/pipeline, discovery, distributed tracing, eventual consistency, chi phí ops nặng. Quá tầm một dev học tập, và phần lớn công sức đổ vào hạ tầng chứ không vào chính các khái niệm cần học.
+## Options considered
 
-- **Monolith một khối (layered thuần)** — nhanh và đơn giản, nhưng không có ranh giới nội bộ. Không có gì ngăn code Ticketing gọi thẳng repository của Identity. Không có ranh giới module để dựa vào — đúng thứ project muốn làm rõ thì lại thiếu.
+**Microservices**, one service and one database per module, communicating over the network. Strong on independent scaling and separate deploys, but it front-loads distribution: multiple repositories and pipelines, service discovery, distributed tracing, eventual consistency, heavy operations. Most of the effort would go into infrastructure rather than the concepts the project exists to work through.
 
-- **Modular Monolith** — một process, một solution, tách thành các module tự chứa, mỗi module là vertical slice bốn lớp (Domain → Application → Infrastructure → Api). Ranh giới có thật nhưng chi phí vận hành vẫn ở mức một tiến trình.
+**A plain layered monolith**, fast and simple, but with no internal boundaries. Nothing stops ticketing code from calling an Identity repository directly. The very thing this project wants to make explicit would be missing.
 
-## Quyết định
+**Modular Monolith**, one process and one solution split into self-contained modules, each a four-layer vertical slice (Domain, Application, Infrastructure, Api). Real boundaries at the operational cost of a single process.
 
-Chúng tôi chọn **Modular Monolith**. Source chia thành các module tự chứa dưới `src/Modules/` (Identity, Events, Ticketing), mỗi module bốn project. `src/Bootstrap/Finmy.Api` là composition root **duy nhất** — nơi duy nhất nạp service và endpoint của mọi module (pattern `AddModules()` / `UseModules()`). Vì thế các project `*.Api` của module là class library, không phải host; chúng chỉ *khai báo* endpoint, host mới *nạp* chúng.
+## Decision
 
-Ranh giới cứng: một module **không** reference trực tiếp `Domain`/`Infrastructure` của module khác. Giao tiếp cross-module đi **chỉ qua** `src/Shared/Finmy.Contracts` (integration events) publish trên Wolverine bus. Luật này được ép bằng project reference — thêm reference sai chiều là gãy build — và sẽ được NetArchTest kiểm để *fail CI* khi có ai vi phạm (Tuần 4).
+Modular Monolith. Source splits into self-contained modules under `src/Modules/`, four projects each. `src/Bootstrap/Finmy.Api` is the only composition root, the single place where every module's services and endpoints are loaded, through the `AddModules()` / `UseModules()` pattern. Module `*.Api` projects are therefore class libraries rather than hosts: they declare endpoints, the host loads them.
 
-## Hệ quả
+The hard boundary: a module must not reference another module's `Domain` or `Infrastructure` directly. Cross-module communication goes only through `src/Shared/Finmy.Contracts` integration events published over the Wolverine bus. Project references enforce part of this, since a reference in the wrong direction breaks the build, and NetArchTest is meant to fail CI on the rest.
 
-- Ranh giới trở thành thứ máy kiểm được, không phải quy ước dễ trôi: reference sai chiều gãy build ngay, NetArchTest bắt phần còn lại.
-- Nếu sau này thật sự cần tách một module ra microservice, ranh giới cứng đã dựng sẵn khiến đường tách ngắn — module đã không rò rỉ internal.
-- Đánh đổi chấp nhận: không có scale độc lập từng module, không tách deploy — nhưng đó không phải mục tiêu của project này.
-- Việc phát sinh: mọi trao đổi cross-module phải nắn qua integration event trong `Finmy.Contracts`, kể cả khi gọi thẳng sẽ tiện hơn. Chi phí này là cố ý — nó chính là thứ giữ cho monolith "modular" chứ không rối.
-- Một process nhưng ranh giới ép bằng compiler và test kiến trúc chứ không bằng kỷ luật con người, nên không phụ thuộc vào việc ai đó nhớ giữ chúng.
+## Consequences
+
+Boundaries become machine-checkable rather than a convention that erodes: a wrong-direction reference breaks the build immediately, and NetArchTest catches what the compiler cannot.
+
+If a module genuinely needs to become a separate service later, the hard boundary is already in place and the extraction path is short, because the module never leaked its internals.
+
+The accepted trade-off is no independent scaling per module and no separate deploys. Neither is a goal here.
+
+The follow-on work is that every cross-module exchange has to be shaped into an integration event in `Finmy.Contracts`, even when a direct call would be more convenient. That cost is deliberate: it is what keeps the monolith modular rather than tangled.
