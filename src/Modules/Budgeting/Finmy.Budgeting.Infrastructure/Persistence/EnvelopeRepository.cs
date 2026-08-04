@@ -1,6 +1,7 @@
 ﻿using Finmy.Budgeting.Application.Abstractions;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Budgeting.Domain.Envelopes;
+using Finmy.SharedKernel.Results;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -18,9 +19,21 @@ public sealed class EnvelopeRepository(BudgetingDbContext dbContext) : IEnvelope
         dbContext.Envelopes.Remove(envelope);
     }
 
-    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
+    public async Task<Result> SaveChangesAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return Result.Success();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // EF Core puts the concurrency token in the WHERE clause of every UPDATE and
+            // DELETE, so this fires whenever another writer got there first. Translating it
+            // here keeps EF Core out of the Application layer and turns a 500 into a 409.
+            return EnvelopeErrors.ConcurrencyConflict;
+        }
     }
 
     public async Task<Envelope?> GetByIdAsync(Guid id, CancellationToken cancellationToken)

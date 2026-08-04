@@ -2,7 +2,9 @@
 using Finmy.Budgeting.Application.Caching;
 using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
+using Finmy.Budgeting.Application.Abstractions.Dtos;
 using Finmy.Budgeting.Domain.Envelopes;
+using Finmy.SharedKernel.Results;
 
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
@@ -52,5 +54,46 @@ public class EnvelopeServiceTests
         envelopeRepo.DidNotReceive().Add(Arg.Any<Envelope>());
 
         await envelopeRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Update_WhenTheSaveConflicts_ReturnsConflict()
+    {
+        var envelopeRepo = Substitute.For<IEnvelopeRepository>();
+        var categoryRepo = Substitute.For<ICategoryRepository>();
+        var cacheInvalidator = Substitute.For<IEnvelopeCacheInvalidator>();
+        var realtime = Substitute.For<IEnvelopeRealtimeNotifier>();
+
+        var service = new EnvelopeService(
+            envelopeRepo,
+            categoryRepo,
+            Substitute.For<HybridCache>(),
+            Substitute.For<ILogger<EnvelopeService>>(),
+            realtime,
+            cacheInvalidator);
+
+        var envelope = Envelope.Create("Groceries", null, CategoryId, 1_500m, PeriodStart, PeriodEnd).Value;
+
+        envelopeRepo.GetByIdAsync(envelope.Id, Arg.Any<CancellationToken>()).Returns(envelope);
+        categoryRepo.ExistsAsync(CategoryId, Arg.Any<CancellationToken>()).Returns(true);
+
+        // What EnvelopeRepository returns when EF Core reports a concurrency conflict.
+        envelopeRepo.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(Result.Failure(EnvelopeErrors.ConcurrencyConflict));
+
+        var request = new UpdateEnvelopeRequest("Groceries", null, CategoryId, 1_500m, PeriodStart, PeriodEnd);
+
+        var result = await service.UpdateAsync(envelope.Id, request, CancellationToken.None);
+
+        result.IsFailure.ShouldBeTrue();
+        result.Error.ShouldBe(EnvelopeErrors.ConcurrencyConflict);
+        result.Error.Type.ShouldBe(ErrorType.Conflict, "ResultExtensions maps Conflict to 409, which is the whole point");
+
+        // A write that did not land must not evict the cache or push a stale balance to clients.
+        await cacheInvalidator.DidNotReceive().InvalidateAsync(
+            Arg.Any<DateTimeOffset>(), Arg.Any<DateTimeOffset>(), Arg.Any<CancellationToken>());
+
+        await realtime.DidNotReceive().EnvelopeUpdatedAsync(
+            Arg.Any<EnvelopeBalanceSnapshot>(), Arg.Any<CancellationToken>());
     }
 }

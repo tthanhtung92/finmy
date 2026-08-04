@@ -34,7 +34,10 @@ public sealed partial class EnvelopeService(
 
         envelopeRepository.Add(result.Value); // In-memory only; the row is inserted on SaveChangesAsync
 
-        await envelopeRepository.SaveChangesAsync(cancellationToken);
+        var saveResult = await envelopeRepository.SaveChangesAsync(cancellationToken);
+
+        if (saveResult.IsFailure)
+            return saveResult.Error;
 
         await envelopeCacheInvalidator.InvalidateAsync(result.Value.PeriodStartUtc, result.Value.PeriodEndUtc, cancellationToken);
 
@@ -60,7 +63,12 @@ public sealed partial class EnvelopeService(
 
         envelopeRepository.Remove(envelope);
 
-        await envelopeRepository.SaveChangesAsync(cancellationToken);
+        // The concurrency token sits in the WHERE clause of the DELETE too, so a delete
+        // racing an edit conflicts exactly like an update does.
+        var saveResult = await envelopeRepository.SaveChangesAsync(cancellationToken);
+
+        if (saveResult.IsFailure)
+            return saveResult.Error;
 
         await envelopeCacheInvalidator.InvalidateAsync(envelope.PeriodStartUtc, envelope.PeriodEndUtc, cancellationToken);
 
@@ -89,7 +97,10 @@ public sealed partial class EnvelopeService(
         if (updateResult.IsFailure)
             return updateResult.Error;
 
-        await envelopeRepository.SaveChangesAsync(cancellationToken);
+        var saveResult = await envelopeRepository.SaveChangesAsync(cancellationToken);
+
+        if (saveResult.IsFailure)
+            return saveResult.Error;
 
         await envelopeCacheInvalidator.InvalidateAsync(oldPeriodStart, oldPeriodEnd, cancellationToken);
         await envelopeCacheInvalidator.InvalidateAsync(envelope.PeriodStartUtc, envelope.PeriodEndUtc, cancellationToken);

@@ -65,6 +65,17 @@ public static class EnvelopeErrors
         "The newly allocated amount cannot be less than the amount already spent.",
         ErrorType.Conflict);
 
+    /// <summary>
+    /// Raised when the optimistic concurrency token on <see cref="Envelope"/> no longer
+    /// matches the row, meaning somebody else changed the envelope in between. The bus path
+    /// retries this through the policy in Program.cs; the HTTP path reports it as 409 so the
+    /// caller can reload and try again (ADR-0009).
+    /// </summary>
+    public static readonly Error ConcurrencyConflict = new(
+        "Budgeting.ConcurrencyConflict",
+        "The envelope was modified by someone else. Reload it and try again.",
+        ErrorType.Conflict);
+
     public static readonly Error FundAmountNotPositive = new(
         "Budgeting.FundAmountNotPositive",
         "The fund amount must be greater than zero.",
