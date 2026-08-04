@@ -23,7 +23,7 @@ public class EnvelopeServiceTests
         => new("Groceries", "Monthly food budget", CategoryId, 1_500m, PeriodStart, PeriodEnd);
 
     [Fact]
-    public static async Task Create_WithCategoryNotFound()
+    public async Task Create_WithCategoryNotFound()
     {
         var envelopeRepo = Substitute.For<IEnvelopeRepository>();
         var categoryRepo = Substitute.For<ICategoryRepository>();

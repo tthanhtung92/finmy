@@ -1,4 +1,4 @@
-﻿using Finmy.Identity.Application.Authentication;
+using Finmy.Identity.Application.Authentication;
 using Finmy.Identity.Application.Authentication.Dtos;
 using Finmy.Modularity.Extensions;
 using Finmy.Modularity.Filters;
@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Finmy.Identity.Api.Endpoints;
 
-public sealed class IdentityCoreEndpoints
+public static class IdentityCoreEndpoints
 {
     public static void MapEndpoints(IEndpointRouteBuilder endpoints)
     {

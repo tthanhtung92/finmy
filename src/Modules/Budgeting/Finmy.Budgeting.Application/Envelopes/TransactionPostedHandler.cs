@@ -11,7 +11,7 @@ using Wolverine;
 
 namespace Finmy.Budgeting.Application.Envelopes;
 
-public sealed class TransactionPostedHandler(
+public sealed partial class TransactionPostedHandler(
     IEnvelopeRepository repository,
     IProcessedTransactionStore processedTransactionStore,
     TimeProvider timeProvider,
@@ -25,7 +25,7 @@ public sealed class TransactionPostedHandler(
 
         if (wasApplied)
         {
-            logger.LogInformation("Transaction with Id '{TransactionId}' was already applied.", message.TransactionId);
+            LogAlreadyApplied(logger, message.TransactionId);
 
             return outgoing;
         }
@@ -46,7 +46,7 @@ public sealed class TransactionPostedHandler(
         {
             processedTransactionStore.MarkApplied(message.TransactionId, message.EnvelopeId, message.Amount, timeProvider.GetUtcNow());
 
-            logger.LogInformation("Envelope with Id '{EnvelopeId}' {Action} succeeded.", message.EnvelopeId, action);
+            LogEnvelopeChanged(logger, message.EnvelopeId, action);
 
             outgoing.Add(new EnvelopeBalanceChangedEvent(
                 message.TransactionId,
@@ -67,7 +67,7 @@ public sealed class TransactionPostedHandler(
 
         if (result.Error == EnvelopeErrors.InsufficientFunds)
         {
-            logger.LogWarning("Envelope with Id '{EnvelopeId}' {Action} rejected: '{ErrorCode}'.", message.EnvelopeId, action, result.Error.Code);
+            LogEnvelopeChangeRejected(logger, message.EnvelopeId, action, result.Error.Code);
 
             outgoing.Add(new EnvelopeOverspentEvent(
                 message.TransactionId,
@@ -86,4 +86,13 @@ public sealed class TransactionPostedHandler(
             throw new InvalidOperationException(result.Error.Code);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Transaction with Id '{TransactionId}' was already applied.")]
+    private static partial void LogAlreadyApplied(ILogger logger, Guid transactionId);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Envelope with Id '{EnvelopeId}' {Action} succeeded.")]
+    private static partial void LogEnvelopeChanged(ILogger logger, Guid envelopeId, string action);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Envelope with Id '{EnvelopeId}' {Action} rejected: '{ErrorCode}'.")]
+    private static partial void LogEnvelopeChangeRejected(ILogger logger, Guid envelopeId, string action, string errorCode);
 }

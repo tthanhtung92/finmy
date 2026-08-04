@@ -8,13 +8,13 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Finmy.Identity.Api.Endpoints;
 
-public sealed class IdentityDemoEndpoints
+public static class IdentityDemoEndpoints
 {
     public static void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/identity");
 
-        group.MapGet("/ping", Ping);
+        group.MapGet("/ping", () => "Identity pong!");
 
         group.MapGet("/me", GetCurrentUser)
             .RequireAuthorization();
@@ -22,8 +22,6 @@ public sealed class IdentityDemoEndpoints
         group.MapGet("/admin-only", AdminOnly)
             .RequireAuthorization(p => p.RequireRole("Admin"));
     }
-
-    private static string Ping() => "Identity pong!";
 
     private static IResult GetCurrentUser(ClaimsPrincipal user)
     {

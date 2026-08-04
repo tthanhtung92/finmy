@@ -8,7 +8,7 @@ using Npgsql;
 
 namespace Finmy.Ledger.Infrastructure.Persistence;
 
-public sealed class IdempotencyStore(
+public sealed partial class IdempotencyStore(
     LedgerDbContext dbContext,
     TimeProvider timeProvider,
     ILogger<IdempotencyStore> logger) : IIdempotencyStore
@@ -45,11 +45,14 @@ public sealed class IdempotencyStore(
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
         {
-            logger.LogWarning("Duplicate record error: {Message}", ex.InnerException.Message);
+            LogDuplicateRecord(logger, ex, key);
 
             dbContext.Entry(record).State = EntityState.Detached;
 
             return false;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Duplicate idempotency record for key '{Key}'.")]
+    private static partial void LogDuplicateRecord(ILogger logger, Exception exception, string key);
 }

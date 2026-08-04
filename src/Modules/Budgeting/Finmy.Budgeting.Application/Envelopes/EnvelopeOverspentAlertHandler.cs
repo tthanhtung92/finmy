@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Finmy.Budgeting.Application.Envelopes;
 
-public class EnvelopeOverspentAlertHandler(
+public partial class EnvelopeOverspentAlertHandler(
     IEnvelopeRealtimeNotifier notifier,
     ILogger<EnvelopeOverspentAlertHandler> logger)
 {
@@ -23,6 +23,9 @@ public class EnvelopeOverspentAlertHandler(
 
         await notifier.EnvelopeAlertAsync(alert, cancellationToken);
 
-        logger.LogWarning("Overspent alert pushed for envelope '{EnvelopeId}': attempted {AttemptedAmount}, remaining {Remaining}.", message.EnvelopeId, message.AttemptedAmount, message.Remaining);
+        LogOverspentAlertPushed(logger, message.EnvelopeId, message.AttemptedAmount, message.Remaining);
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Overspent alert pushed for envelope '{EnvelopeId}': attempted {AttemptedAmount}, remaining {Remaining}.")]
+    private static partial void LogOverspentAlertPushed(ILogger logger, Guid envelopeId, decimal attemptedAmount, decimal remaining);
 }

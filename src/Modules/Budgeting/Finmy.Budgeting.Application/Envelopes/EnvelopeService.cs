@@ -1,4 +1,4 @@
-﻿using Finmy.Budgeting.Application.Abstractions;
+using Finmy.Budgeting.Application.Abstractions;
 using Finmy.Budgeting.Application.Abstractions.Dtos;
 using Finmy.Budgeting.Application.Caching;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Finmy.Budgeting.Application.Envelopes;
 
-public sealed class EnvelopeService(
+public sealed partial class EnvelopeService(
     IEnvelopeRepository envelopeRepository,
     ICategoryRepository categoryRepository,
     HybridCache cache,
@@ -147,7 +147,7 @@ public sealed class EnvelopeService(
             cacheKey,
             async cancelToken =>
             {
-                logger.LogInformation("Cache MISS {CacheKey}", cacheKey);
+                LogCacheMiss(logger, cacheKey);
 
                 var (items, totalCount) = await envelopeRepository.GetPagedAsync(page, pageSize, cancelToken);
 
@@ -188,7 +188,7 @@ public sealed class EnvelopeService(
             cacheKey,
             async cancelToken =>
             {
-                logger.LogInformation("Cache MISS {CacheKey}", cacheKey);
+                LogCacheMiss(logger, cacheKey);
 
                 var listSummary = await envelopeRepository.GetMonthlySummaryAsync(monthStartUtc, monthEndUtc, cancelToken);
 
@@ -213,4 +213,7 @@ public sealed class EnvelopeService(
 
         return result;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Cache MISS {CacheKey}")]
+    private static partial void LogCacheMiss(ILogger logger, string cacheKey);
 }

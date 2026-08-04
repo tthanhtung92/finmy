@@ -1,6 +1,6 @@
-﻿namespace Finmy.Budgeting.Application.Receipts;
+namespace Finmy.Budgeting.Application.Receipts;
 
-public sealed class ReceiptPolicy
+public static class ReceiptPolicy
 {
     // 1) Allowed content types, compared case-insensitively
     public static readonly IReadOnlySet<string> AllowedContentTypes =

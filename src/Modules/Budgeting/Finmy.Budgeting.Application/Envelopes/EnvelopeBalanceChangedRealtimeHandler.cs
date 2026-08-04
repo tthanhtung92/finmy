@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Finmy.Budgeting.Application.Envelopes;
 
-public class EnvelopeBalanceChangedRealtimeHandler(
+public partial class EnvelopeBalanceChangedRealtimeHandler(
     IEnvelopeRealtimeNotifier notifier,
     ILogger<EnvelopeBalanceChangedRealtimeHandler> logger)
 {
@@ -22,7 +22,7 @@ public class EnvelopeBalanceChangedRealtimeHandler(
 
         await notifier.EnvelopeUpdatedAsync(snapshot, cancellationToken);
 
-        logger.LogInformation("Realtime balance pushed for envelope '{EnvelopeId}': remaining {Remaining} of {Allocated}.", message.EnvelopeId, message.Remaining, message.Allocated);
+        LogBalancePushed(logger, message.EnvelopeId, message.Remaining, message.Allocated);
 
         if (BudgetingAlertPolicy.IsLowBalance(message.Allocated, message.Remaining))
         {
@@ -37,7 +37,13 @@ public class EnvelopeBalanceChangedRealtimeHandler(
 
             await notifier.EnvelopeAlertAsync(alert, cancellationToken);
 
-            logger.LogWarning("Envelope '{EnvelopeId}' low balance alert pushed: remaining {Remaining} of {Allocated}.", message.EnvelopeId, message.Remaining, message.Allocated);
+            LogLowBalanceAlertPushed(logger, message.EnvelopeId, message.Remaining, message.Allocated);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Realtime balance pushed for envelope '{EnvelopeId}': remaining {Remaining} of {Allocated}.")]
+    private static partial void LogBalancePushed(ILogger logger, Guid envelopeId, decimal remaining, decimal allocated);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Envelope '{EnvelopeId}' low balance alert pushed: remaining {Remaining} of {Allocated}.")]
+    private static partial void LogLowBalanceAlertPushed(ILogger logger, Guid envelopeId, decimal remaining, decimal allocated);
 }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace Finmy.Budgeting.Infrastructure.Storage;
 
-public class BucketInitializer(
+public partial class BucketInitializer(
     IAmazonS3 s3, 
     IOptions<S3StorageOptions> options,
     ILogger<BucketInitializer> logger) : IHostedService
@@ -18,7 +18,7 @@ public class BucketInitializer(
         if (!isBucketExist)
         {
             await s3.PutBucketAsync(options.Value.Bucket, cancellationToken);
-            logger.LogInformation("S3 Bucket Initialized: {Bucket}", options.Value.Bucket);
+            LogBucketInitialized(logger, options.Value.Bucket);
         }
     }
 
@@ -26,4 +26,7 @@ public class BucketInitializer(
     {
         return Task.CompletedTask;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "S3 bucket initialized: {Bucket}")]
+    private static partial void LogBucketInitialized(ILogger logger, string bucket);
 }

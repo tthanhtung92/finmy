@@ -1,4 +1,4 @@
-﻿using Finmy.Ledger.Domain.Transactions;
+using Finmy.Ledger.Domain.Transactions;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -9,27 +9,27 @@ public sealed class LedgerDbContext(DbContextOptions<LedgerDbContext> options) :
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<IdempotencyRecord> IdempotencyRecords { get; set; }
 
-    protected override void OnModelCreating(ModelBuilder builder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(builder);
-        builder.HasDefaultSchema("ledger");
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.HasDefaultSchema("ledger");
 
         #region Transaction
 
-        builder.Entity<Transaction>().Property(x => x.Amount).HasPrecision(18, 2);
-        builder.Entity<Transaction>().Property(x => x.Description).HasMaxLength(500);
+        modelBuilder.Entity<Transaction>().Property(x => x.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<Transaction>().Property(x => x.Description).HasMaxLength(500);
 
-        builder.Entity<Transaction>().HasIndex(x => x.EnvelopeId);
-        builder.Entity<Transaction>().HasIndex(x => x.SpaceId);
+        modelBuilder.Entity<Transaction>().HasIndex(x => x.EnvelopeId);
+        modelBuilder.Entity<Transaction>().HasIndex(x => x.SpaceId);
 
         #endregion Transaction
 
         #region IdempotencyRecord
 
-        builder.Entity<IdempotencyRecord>().HasKey(x => new { x.Key, x.SpaceId });
+        modelBuilder.Entity<IdempotencyRecord>().HasKey(x => new { x.Key, x.SpaceId });
 
-        builder.Entity<IdempotencyRecord>().Property(x => x.Key).HasMaxLength(255);
-        builder.Entity<IdempotencyRecord>().Property(x => x.RequestHash).HasMaxLength(64);
+        modelBuilder.Entity<IdempotencyRecord>().Property(x => x.Key).HasMaxLength(255);
+        modelBuilder.Entity<IdempotencyRecord>().Property(x => x.RequestHash).HasMaxLength(64);
 
         #endregion IdempotencyRecord
     }

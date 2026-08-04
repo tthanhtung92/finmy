@@ -1,4 +1,4 @@
-﻿using Finmy.Budgeting.Application.Receipts;
+using Finmy.Budgeting.Application.Receipts;
 using Finmy.Modularity.Extensions;
 
 using Microsoft.AspNetCore.Builder;
@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Finmy.Budgeting.Api.Endpoints;
 
-public sealed class ReceiptEndpoints
+public static class ReceiptEndpoints
 {
     public static void MapEndpoints(IEndpointRouteBuilder endpoints)
     {

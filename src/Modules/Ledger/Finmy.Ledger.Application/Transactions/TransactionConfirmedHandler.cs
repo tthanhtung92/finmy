@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Finmy.Ledger.Application.Transactions;
 
-public class TransactionConfirmedHandler(
+public partial class TransactionConfirmedHandler(
     ITransactionRepository repository,
     ITransactionRequestStatusStore statusStore,
     TimeProvider timeProvider,
@@ -22,11 +22,17 @@ public class TransactionConfirmedHandler(
 
         if (confirmResult.IsFailure)
         {
-            logger.LogWarning("Transaction with Id '{TransactionId}' confirm rejected: '{ErrorCode}'.", message.TransactionId, confirmResult.Error.Code);
+            LogConfirmRejected(logger, message.TransactionId, confirmResult.Error.Code);
             return;
         }
 
         await statusStore.MarkSucceededAsync(message.TransactionId, cancellationToken);
-        logger.LogInformation("Transaction with Id '{TransactionId}' confirmed.", message.TransactionId);
+        LogConfirmed(logger, message.TransactionId);
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Transaction with Id '{TransactionId}' confirm rejected: '{ErrorCode}'.")]
+    private static partial void LogConfirmRejected(ILogger logger, Guid transactionId, string errorCode);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Transaction with Id '{TransactionId}' confirmed.")]
+    private static partial void LogConfirmed(ILogger logger, Guid transactionId);
 }

@@ -1,4 +1,4 @@
-﻿using Finmy.Ledger.Application.Abstractions;
+using Finmy.Ledger.Application.Abstractions;
 using Finmy.Ledger.Application.Transactions;
 using Finmy.Ledger.Application.Transactions.Dtos;
 using Finmy.Ledger.Domain.Transactions;
@@ -15,7 +15,7 @@ using Wolverine;
 
 namespace Finmy.Ledger.Api.Endpoints;
 
-public sealed class TransactionEndpoints
+public static class TransactionEndpoints
 {
     public static void MapEndpoints(IEndpointRouteBuilder endpoints)
     {

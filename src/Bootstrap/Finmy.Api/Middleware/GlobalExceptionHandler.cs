@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Finmy.Api.Middleware;
 
-internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IProblemDetailsService problemDetailsService) : IExceptionHandler
+internal sealed partial class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger, IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "Unhandled exception cho {Path}", httpContext.Request.Path);
+        LogUnhandledException(logger, exception, httpContext.Request.Path);
 
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
@@ -26,4 +26,7 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
 
         return true;
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unhandled exception for {Path}")]
+    private static partial void LogUnhandledException(ILogger logger, Exception exception, PathString path);
 }

@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace Finmy.Ledger.Application.Transactions;
 
-public sealed class RecordTransactionHandler(
+public sealed partial class RecordTransactionHandler(
     ITransactionRepository repository,
     ITransactionRequestStatusStore statusStore,
     ILogger<RecordTransactionHandler> logger)
@@ -33,7 +33,7 @@ public sealed class RecordTransactionHandler(
         if (result.IsFailure)
         {
             await statusStore.MarkFailedAsync(command.TransactionId, result.Error, cancellationToken);
-            logger.LogWarning("Transaction with Id '{TransactionId}' rejected: '{ErrorCode}'.", command.TransactionId, result.Error.Code);
+            LogTransactionRejected(logger, command.TransactionId, result.Error.Code);
             throw new TransactionRejectedException(result.Error);
         }
 
@@ -53,6 +53,9 @@ public sealed class RecordTransactionHandler(
     {
         chain.OnException<TransactionRejectedException>().Discard();
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Transaction with Id '{TransactionId}' rejected: '{ErrorCode}'.")]
+    private static partial void LogTransactionRejected(ILogger logger, Guid transactionId, string errorCode);
 }
 
 file static class TransactionDirectionExtensions

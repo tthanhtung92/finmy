@@ -1,4 +1,4 @@
-﻿using Finmy.Budgeting.Api.Realtime;
+using Finmy.Budgeting.Api.Realtime;
 using Finmy.Budgeting.Application.Caching;
 using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Finmy.Budgeting.Api.Endpoints;
 
-public sealed class EnvelopeEndpoints
+public static class EnvelopeEndpoints
 {
     public static void MapEndpoints(IEndpointRouteBuilder endpoints)
     {

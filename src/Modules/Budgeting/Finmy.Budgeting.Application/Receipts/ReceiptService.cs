@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Finmy.Budgeting.Application.Receipts;
 
-public sealed class ReceiptService(
+public sealed partial class ReceiptService(
     IReceiptStorage receiptStorage,
     IReceiptRepository receiptRepository,
     ILogger<ReceiptService> logger,
@@ -51,7 +51,7 @@ public sealed class ReceiptService(
             cacheKey,
             async cancelToken =>
             {
-                logger.LogInformation("Cache MISS {CacheKey}", cacheKey);
+                LogCacheMiss(logger, cacheKey);
 
                 var receipt = await receiptRepository.GetByIdAsync(id, cancelToken);
 
@@ -68,4 +68,7 @@ public sealed class ReceiptService(
 
         return url;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Cache MISS {CacheKey}")]
+    private static partial void LogCacheMiss(ILogger logger, string cacheKey);
 }
