@@ -16,3 +16,4 @@ This directory is Finmy's record of why. Each ADR captures one architectural dec
 | [0010](0010-single-writer-envelope-balance.md) | Budgeting owns the envelope balance; overspend protection is eventually consistent with a compensating reversal | Accepted | 2026-07-25 |
 | [0011](0011-async-request-reply-202.md) | Recording a transaction is an async `202 Accepted` with a status resource | Accepted | 2026-07-26 |
 | [0012](0012-defer-microservice-split.md) | Stay a modular monolith through the production phases; extract Identity first if a split becomes necessary | Accepted | 2026-08-04 |
+| [0013](0013-wolverine-auto-codegen-in-production.md) | Run production Wolverine handlers with `TypeLoadMode.Auto`, not `Static` | Accepted | 2026-08-04 |
