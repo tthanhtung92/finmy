@@ -16,11 +16,26 @@
         <Configuration>
           <CodeCoverage>
             <ModulePaths>
+              <!--
+                Include is an allowlist: only Finmy's own assemblies are ever considered,
+                so a third-party dependency can never inflate the denominator just because
+                its PDB happens to be resolvable on a given OS. That is what actually
+                happened here: JasperFx (a Wolverine dependency, not Finmy code) was invisible
+                to the collector on the Windows dev machine but added 23000+ lines on the
+                Linux CI runner the first time this ran there, because the two platforms
+                resolve embedded/portable PDBs for the same NuGet package differently.
+                Chasing that package by name would only fix this one instance; the allowlist
+                fixes the class of bug.
+              -->
+              <Include>
+                <!-- [^\\/]* rather than .*, so this matches only the file name, not any
+                     directory segment that happens to contain "Finmy" too. -->
+                <ModulePath>.*[\\/]Finmy\.[^\\/]*\.dll$</ModulePath>
+              </Include>
               <Exclude>
-                <!-- Only production code is measured. -->
+                <!-- Test assemblies also start with "Finmy.", so the allowlist above does
+                     not exclude them on its own. -->
                 <ModulePath>.*Tests\.dll$</ModulePath>
-                <ModulePath>.*Testcontainers.*\.dll$</ModulePath>
-                <ModulePath>.*NetArchTest.*\.dll$</ModulePath>
               </Exclude>
             </ModulePaths>
 
