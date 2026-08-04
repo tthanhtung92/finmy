@@ -15,14 +15,14 @@
     assemblies without executing them, so including it reports every one of its ~2000
     loaded lines as uncovered and drags the number down for no reason.
 
-    Thresholds start at the level measured when coverage was introduced and are meant to
-    ratchet upward. Raise them when real tests arrive; never lower them to make a build
-    pass.
+    Thresholds sit a couple of points under the measured number, leaving room for the small
+    run-to-run variation the container-backed tests introduce. They are meant to ratchet
+    upward. Raise them when real tests arrive; never lower them to make a build pass.
 #>
 [CmdletBinding()]
 param(
-    [double] $LineThreshold = 34.0,
-    [double] $BranchThreshold = 42.0,
+    [double] $LineThreshold = 52.0,
+    [double] $BranchThreshold = 48.0,
     [switch] $SkipIntegration
 )
 

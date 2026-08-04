@@ -16,7 +16,9 @@ The signature problem the project is built around is **anti-overspend on shared 
 
 The anti-overspend loop is closed end to end: `Envelope` carries `Spent`, a computed `Remaining`, and `Spend` / `Release` / `Fund`; the concurrency token is a self-managed `int Version`; Budgeting consumes `TransactionPostedEvent`; insufficient funds raise `EnvelopeOverspentEvent` and Ledger reverses through `TransactionState`; `EnvelopeBalanceChangedEvent` drives cache invalidation, the SignalR push, and budget alerts, and Ledger's `TransactionConfirmedHandler` flips a transaction to `Confirmed` only once Budgeting has applied the deduction.
 
-**What does not exist yet**, so its absence is expected: no `Space` aggregate, no Dockerfile, no CI workflows, no observability, no analyzers, no NetArchTest, no rate limiting or API versioning. The status store (`InMemoryTransactionStatusStore`) is still in memory. `docs/TECH-DEBT.md` is the authoritative list of known gaps; `docs/ROADMAP.md` and `README.md` are the authoritative spec.
+**Quality gates.** `Directory.Build.props` turns on the .NET analyzers at `AnalysisMode=Recommended` with `EnforceCodeStyleInBuild`, plus SonarAnalyzer.CSharp and Roslynator for every project; `TreatWarningsAsErrors` was already on, so all of it fails the build. `tests/Finmy.ArchitectureTests` holds the boundary rule with NetArchTest and the ADR-0009 `Version++` invariant with a Roslyn source guard. `tests/Finmy.IntegrationTests` drives the real host over HTTP through `FinmyApiFactory` against Postgres, Redis and MinIO containers. `scripts/coverage.ps1` keeps coverage from sliding below 52% lines and 48% branches.
+
+**What does not exist yet**, so its absence is expected: no `Space` aggregate, no Dockerfile, no CI workflows, no observability, no rate limiting or API versioning. Budgeting and Ledger endpoints are still anonymous. The status store (`InMemoryTransactionStatusStore`) is still in memory. `docs/TECH-DEBT.md` is the authoritative list of known gaps; `docs/ROADMAP.md` and `README.md` are the authoritative spec.
 
 Envelope balance stays in Budgeting by the single-writer rule ([ADR-0010](docs/adr/0010-single-writer-envelope-balance.md)).
 
@@ -30,6 +32,10 @@ dotnet run --project src/Bootstrap/Finmy.Api            # run the host (composit
 dotnet test Finmy.slnx                                  # whole suite
 dotnet test tests/Finmy.UnitTests/Finmy.UnitTests.csproj
 dotnet test tests/Finmy.UnitTests/Finmy.UnitTests.csproj -- --filter-class "*EnvelopeSpendTests"
+
+# coverage — runs the unit and integration suites, merges, fails below the floor
+pwsh scripts/coverage.ps1
+pwsh scripts/coverage.ps1 -SkipIntegration      # no Docker
 
 # Wolverine/JasperFx diagnostics — the only verify tier that touches startup without a live DB
 dotnet run --project src/Bootstrap/Finmy.Api -- describe
@@ -48,7 +54,9 @@ That has one sharp edge. The old VSTest `--filter "FullyQualifiedName~X"` is sti
 
 `describe` only reports at assembly level and does not list handlers; use `describe-handlers` for that.
 
-`dotnet-ef` is pinned to `10.0.10` in `.config/dotnet-tools.json`, matching the EF runtime. Run `dotnet tool restore` once after cloning; the local manifest takes precedence over any global install, so the version-skew warning does not come back.
+`dotnet-ef` is pinned to `10.0.10` in `.config/dotnet-tools.json`, matching the EF runtime, alongside `dotnet-coverage` for the merge step. Run `dotnet tool restore` once after cloning; the local manifest takes precedence over any global install, so the version-skew warning does not come back.
+
+A malformed `.runsettings` is reported as **"Zero tests ran"** with exit code 5 as well, with nothing said about parsing. The usual cause is a double hyphen inside an XML comment, which is illegal XML and easy to write when documenting the flags the file exists for.
 
 Infrastructure (Postgres, Redis, MinIO) runs via `docker compose --env-file .env -f docker/docker-compose.yml up -d`. The `--env-file .env` is required: the compose files live in `docker/` but `.env` sits at the repo root, so without it every variable resolves empty. `docker/docker-compose.local.yml` is the same stack plus pgadmin and redisinsight.
 
@@ -59,7 +67,7 @@ One process, source split into self-contained **modules** under `src/Modules/`: 
 - `src/Bootstrap/Finmy.Api` is the **only host and composition root**. It wires every module's services and endpoints through `AddModules()` / `UseModules()`.
 - `src/Shared/Finmy.SharedKernel` holds `Result<T>`, domain-event base types, guards. `src/Shared/Finmy.Contracts` holds **integration events**, the only public cross-module surface. `src/Shared/Finmy.Modularity` holds the `IModule` abstraction, the `AddModules()` / `UseModules()` glue, `ResultExtensions` (mapping to ProblemDetails), and `ValidationFilter<T>`.
 
-**The boundary rule, which is the point of the project:** a module must never reference another module's `Domain` or `Infrastructure` directly. Cross-module communication goes only through `Finmy.Contracts` integration events published over the Wolverine bus. NetArchTest is meant to enforce this in CI and does not exist yet. If you find yourself adding a project reference between two modules, that is a design error.
+**The boundary rule, which is the point of the project:** a module must never reference another module's `Domain` or `Infrastructure` directly. Cross-module communication goes only through `Finmy.Contracts` integration events published over the Wolverine bus. `tests/Finmy.ArchitectureTests` enforces this, so adding a project reference between two modules turns the build red. Fix the design rather than the test.
 
 ## Stack and deliberate constraints
 

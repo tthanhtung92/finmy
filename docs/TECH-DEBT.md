@@ -8,7 +8,7 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 
 | # | Debt | Phase |
 |---|---|---|
-| 1 | **Budgeting and Ledger endpoints have no `RequireAuthorization()`.** Only `IdentityDemoEndpoints.cs` has it. Anyone can `POST /transactions`, and anyone who knows a `transactionId` can read its status. | 3 |
+| 1 | **Budgeting and Ledger endpoints have no `RequireAuthorization()`.** Only `IdentityDemoEndpoints.cs` has it. Anyone can `POST /transactions`, and anyone who knows a `transactionId` can read its status. The HTTP tests call those endpoints without a token, so closing this gap also means teaching `FinmyApiFactory` to mint one and send it on every request. | 3 |
 | 2 | **`InMemoryTransactionStatusStore` keeps request state in RAM.** Lost on restart, wrong across instances. The store also sits outside the transaction, so it can report a state the database never reached: if the commit fails after the handler wrote `Succeeded`, the client still reads `Succeeded` for a transaction that does not exist. The `ITransactionRequestStatusStore` port stays; only the adapter moves to Postgres. | 3 |
 | 3 | **No retention policy for the status resource.** Once the store lives in the database, every request leaves a row behind forever. MS guidance suggests an `Expires` header so clients know the retention window. | 3 |
 | 4 | **`AutoBuildMessageStorageOnStartup` left at its default**, so Wolverine creates its tables at startup. Production should use `AutoCreate.None` and run `resources setup` as an explicit deploy step. | 5 |
@@ -17,8 +17,6 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 
 | # | Debt | Phase |
 |---|---|---|
-| 5 | **`EnvelopeService.UpdateAsync` calls `SaveChangesAsync` without catching `DbUpdateConcurrencyException`.** The bus path handles it through the retry policy in `Program.cs`; the HTTP path does not, so `PUT /envelopes/{id}` returns 500 instead of 409 when two people edit at once. | 1 |
-| 6 | **No integration test for the async flow.** `PostgresFixture` goes straight to `DbContext` and never through the host, so removing `AutoApplyTransactions()` or re-enabling `ProcessInline` leaves the test suite green. The fix is `WebApplicationFactory` plus Testcontainers plus Wolverine's tracked session (`TrackActivity().WaitForExecutionOf<T>()`) in place of `Task.Delay`. Longest-running item on this list, carried since Day 17. | 1 |
 | 7 | **`Transaction.EnvelopeId` is never checked for existence.** There is no FK to `budgeting.envelopes`, deliberately, since a cross-schema FK would hard-wire two modules together, and nothing replaces it. A transaction pointing at a nonexistent envelope currently lands in the dead letter queue instead of being reversed automatically. | 6 |
 | 8 | **No `GET /transactions/{id}` returning the transaction itself**, so the status endpoint cannot answer `303 See Other` on completion. The data is in the database now, so this is a matter of choosing to do it rather than being unable to. | 3 |
 | 9 | **`UnreachableException` in the `default` arm of the `TransactionDirection` switches** (`TransactionPostedHandler.cs:42`, `RecordTransactionHandler.cs:65`) relies on a guarantee that does not hold. `Enum.IsDefined` only guards the creation path. Messages travel over the wire as numbers and can be replayed from the outbox after a new enum member is added, at which point the exception name describes something other than what happened. | |
@@ -36,7 +34,7 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 
 | # | Debt | Phase |
 |---|---|---|
-| 14 | **Untested hypothesis:** if `AutoApplyTransactions()` picks up a handler in a module registered with a plain `AddDbContext` rather than `AddDbContextWithWolverineIntegration`, the middleware may call `SaveChangesAsync` without enrolling that `DbContext` in the outbox. If so, dual-write returns while the build stays green. Needs a test case once a third module gains a handler. | 1 |
+| 14 | **Untested hypothesis:** if `AutoApplyTransactions()` picks up a handler in a module registered with a plain `AddDbContext` rather than `AddDbContextWithWolverineIntegration`, the middleware may call `SaveChangesAsync` without enrolling that `DbContext` in the outbox. If so, dual-write returns while the build stays green. Still open, though narrower now: the HTTP tests fail when `AutoApplyTransactions()` is removed, so the policy itself is covered. What is not covered is a module wired the wrong way, and there is no third module with a handler to write that case against. | 6 |
 
 ## Notes worth keeping, not debt
 

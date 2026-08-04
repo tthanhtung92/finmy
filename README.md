@@ -110,7 +110,7 @@ The envelope balance is written only by Budgeting. Ledger never touches the enve
 
 The concurrency token is a self-managed `int Version` rather than `xmin` through `IsRowVersion()`. `xmin` forces hand-editing a meaningless `AddColumn` out of every migration, and its value does not survive a dump and restore. The self-managed version has its own cost: forgetting `Version++` in a new mutating method silently removes the protection while the build stays green, so every mutating method needs a test asserting the version increments.
 
-Module boundaries are meant to be enforced automatically by architecture tests (NetArchTest) in CI. Neither exists yet.
+Module boundaries are enforced by NetArchTest in `tests/Finmy.ArchitectureTests`, alongside a Roslyn guard that fails the build when a mutating `Envelope` method forgets to bump `Version`.
 
 Reasoning behind the choices is in the [ADRs](docs/adr/).
 
@@ -150,7 +150,7 @@ In use today:
 | Tests | xUnit v3 on Microsoft Testing Platform, NSubstitute, Shouldly, Testcontainers |
 | Infrastructure | Docker Compose (PostgreSQL, Redis, MinIO) |
 
-Planned: Mapster, Serilog, OpenTelemetry, NetArchTest, GitHub Actions, Helm on k3s.
+Quality gates: .NET analyzers, SonarAnalyzer, Roslynator, NetArchTest, and code coverage through the Microsoft Testing Platform collector. Planned: Mapster, Serilog, OpenTelemetry, GitHub Actions, Helm on k3s.
 
 > **On licensing:** the project deliberately avoids libraries that moved to commercial licenses in 2025 (MediatR, AutoMapper, MassTransit, Moq, FluentAssertions) and uses equivalent replacements. Details in [ADR-0003](docs/adr/0003-avoid-commercial-libraries.md).
 
@@ -238,15 +238,15 @@ Space, Account and the rest arrive with the [roadmap](docs/ROADMAP.md).
 ## Testing
 
 ```bash
-dotnet run --project tests/Finmy.UnitTests/Finmy.UnitTests.csproj
-dotnet run --project tests/Finmy.IntegrationTests/Finmy.IntegrationTests.csproj   # needs Docker
+dotnet test Finmy.slnx          # 102 tests; the integration suite needs Docker
+pwsh scripts/coverage.ps1       # coverage, failing below the recorded floor
 ```
 
-Unit tests cover the Envelope domain (create, update, spend, fund), `EnvelopeService`, the cache and alert policies, the receipt validator and the Transaction domain. There is one integration test: two transactions spending concurrently from a nearly-empty envelope against a real Postgres from Testcontainers, asserting that exactly one succeeds.
+Unit tests cover the Envelope domain (create, update, spend, fund), `EnvelopeService`, the cache and alert policies, the receipt validator and the Transaction domain. Architecture tests hold the module boundaries and the `Version++` invariant. Integration tests run against real containers: the concurrency race straight against Postgres, and the full anti-overspend loop over HTTP through `WebApplicationFactory` with Postgres, Redis and MinIO behind it, waiting on Wolverine's tracked session rather than on a sleep.
 
-The test projects run on Microsoft Testing Platform rather than VSTest, so filter with `--filter-class` or `--filter-method`; the older `--filter "FullyQualifiedName~X"` syntax matches nothing and reports no error. `dotnet test` itself currently reports "Zero tests ran" and exits 5 even when the suite is green, which is why the commands above invoke the test executables directly.
+The test projects run on Microsoft Testing Platform rather than VSTest. Filters go after `--`: `--filter-class`, `--filter-method`, `--filter-query`. The older `--filter "FullyQualifiedName~X"` syntax is accepted, matches nothing, and reports "Zero tests ran" with exit code 5, which looks like a broken runner and is a broken filter.
 
-NetArchTest architecture tests are still outstanding, so module boundaries currently rest on discipline rather than on a failing build.
+Architecture tests run alongside the rest of the suite, so a broken module boundary shows up as a failing build rather than in review.
 
 ---
 
@@ -304,7 +304,7 @@ The phase plan is in [docs/ROADMAP.md](docs/ROADMAP.md); known gaps are tracked 
 - [x] SignalR realtime, Wolverine in-process, async 202 writes, transactional outbox
 - [x] Overspend protection with a race-condition test, and the full event chain
 - [x] Idempotency: `Idempotency-Key` on writes plus a consumer dedup table
-- [ ] Build and quality gates: analyzers, coverage, NetArchTest, HTTP-level integration tests
+- [x] Build and quality gates: analyzers, coverage, NetArchTest, HTTP-level integration tests
 - [ ] Packaging and CI/CD: Dockerfile, GitHub Actions, image publishing
 - [ ] Production hardening: health checks, authorization, rate limiting, API versioning, durable status store
 - [ ] Observability: Serilog plus OpenTelemetry into a self-hosted Grafana stack

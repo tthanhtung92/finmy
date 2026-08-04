@@ -98,7 +98,7 @@ finmy/
 ├── tests/
 │   ├── Finmy.UnitTests/                # domain logic, handlers (NSubstitute)
 │   ├── Finmy.IntegrationTests/         # Testcontainers: real Postgres
-│   └── Finmy.ArchitectureTests/        # NetArchTest: enforces module boundaries (planned)
+│   └── Finmy.ArchitectureTests/        # NetArchTest: enforces module boundaries
 ├── docs/
 │   ├── ROADMAP.md
 │   ├── TECH-DEBT.md
@@ -119,7 +119,7 @@ Folder, file, namespace and class naming follows [naming-conventions.md](naming-
 
 - A module must not reference another module's `Domain` or `Infrastructure` directly.
 - Cross-module communication goes only through `Finmy.Contracts` integration events published over Wolverine.
-- `Finmy.ArchitectureTests` uses **NetArchTest** to fail CI when someone breaks the rule. Until that project exists, the boundary rests on discipline alone.
+- `Finmy.ArchitectureTests` uses **NetArchTest** to fail the build when someone breaks the rule.
 
 ---
 
@@ -146,7 +146,7 @@ Phases run in order. Each is a separate implementation plan; open items carried 
 
 **Phase 0: repository cleanup (done 2026-08-04).** Removed the tutorial layer the project was built with, switched everything to English, and made `CLAUDE.md` a tracked file. Extracted the decisions and deferred work that only existed in local notes into [ADR-0010](adr/0010-single-writer-envelope-balance.md), [ADR-0011](adr/0011-async-request-reply-202.md) and [TECH-DEBT.md](TECH-DEBT.md).
 
-**Phase 1: build and quality gates.** Pin the SDK in `global.json`. Move `dotnet-tools.json` under `.config/`. Turn on .NET analyzers plus SonarAnalyzer and Roslynator, and give `.editorconfig` real severities instead of the current all-suggestion setup. Add code coverage with a threshold that starts at the current level. Add `Finmy.ArchitectureTests` with NetArchTest to enforce the boundary rule. Add `WebApplicationFactory` integration tests so the async flow is covered through HTTP rather than straight to `DbContext`.
+**Phase 1: build and quality gates (done 2026-08-04).** Pinned the SDK to 10.0.302 in `global.json` and moved the tool manifest under `.config/`. Turned on .NET analyzers at `Recommended` plus SonarAnalyzer and Roslynator, cleared the 101 warnings they raised, and gave `.editorconfig` real severities. Added `Finmy.ArchitectureTests`: NetArchTest for the boundary rule and the banned libraries of [ADR-0003](adr/0003-avoid-commercial-libraries.md), plus a Roslyn guard that every mutating `Envelope` method still bumps `Version` as [ADR-0009](adr/0009-self-managed-version-concurrency-token.md) requires. Added coverage through the MTP collector with `scripts/coverage.ps1` holding the floor at 52% lines and 48% branches. Paid off TECH-DEBT #5 and #6: `WebApplicationFactory` now drives the anti-overspend loop over HTTP against Postgres, Redis and MinIO containers, and a concurrent envelope write answers 409 instead of 500.
 
 **Phase 2: packaging and CI/CD.** Multi-stage Dockerfile with a non-root user, plus `.dockerignore`. An `api` service in the compose file. GitHub Actions for build, test, architecture test, integration test and coverage, and a release workflow pushing images to GHCR. Dependabot, CODEOWNERS, CodeQL, and `dotnet list package --vulnerable` as a gate. Branch protection on `main`.
 
