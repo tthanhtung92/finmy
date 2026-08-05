@@ -1,5 +1,6 @@
 ﻿using Finmy.Budgeting.Api.Caching;
 using Finmy.Budgeting.Api.Endpoints;
+using Microsoft.AspNetCore.OutputCaching;
 using Finmy.Budgeting.Api.Realtime;
 using Finmy.Budgeting.Application.Abstractions;
 using Finmy.Budgeting.Application.Caching;
@@ -28,9 +29,11 @@ public sealed class BudgetingModule : IModule
         services.AddOutputCache(options =>
         {
             options.AddPolicy(BudgetingCachePolicy.ReportSummaryOutputPolicy, policy
-                => policy.Expire(TimeSpan.FromSeconds(60)).SetVaryByQuery("year", "month").Tag(BudgetingCachePolicy.OutputSummaryTag));
+                => policy.AddPolicy<VaryByUserPolicy>()
+                    .Expire(TimeSpan.FromSeconds(60)).SetVaryByQuery("year", "month").Tag(BudgetingCachePolicy.OutputSummaryTag));
             options.AddPolicy(BudgetingCachePolicy.EnvelopeListOutputPolicy, policy
-                => policy.Expire(TimeSpan.FromSeconds(60)).SetVaryByQuery("page", "pageSize").Tag(BudgetingCachePolicy.OutputListTag));
+                => policy.AddPolicy<VaryByUserPolicy>()
+                    .Expire(TimeSpan.FromSeconds(60)).SetVaryByQuery("page", "pageSize").Tag(BudgetingCachePolicy.OutputListTag));
         });
 
         // Realtime
