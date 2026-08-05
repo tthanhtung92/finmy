@@ -42,26 +42,26 @@ A personal project under active construction, on its way to a real deployment bu
 **Built and running:**
 
 - Modular Monolith skeleton: `Finmy.Api` as the composition root, `IModule` for self-registration, one DbContext per module on its own schema (`identity`, `budgeting`, `ledger`, plus `wolverine` for the message store).
-- **Identity**, all four layers: registration, login, JWT access tokens. Refresh-token rotation, with reuse of a revoked token revoking the user's entire chain. Tokens are generated from an RNG and stored as SHA-256 hashes behind a unique index on `TokenHash`. Admin and User roles plus a default admin seeded through an `IHostedService`, credentials read from configuration. Endpoints under `/identity`: `/register`, `/login`, `/refresh`, `/logout`, `/me`, `/admin-only`. The module has been through a security review with the findings fixed.
+- **Identity**, all four layers: registration, login, JWT access tokens. Refresh-token rotation, with reuse of a revoked token revoking the user's entire chain. Tokens are generated from an RNG and stored as SHA-256 hashes behind a unique index on `TokenHash`. Admin and User roles plus a default admin seeded through an `IHostedService`, credentials read from configuration. Endpoints under `/api/v1/identity`: `/register`, `/login`, `/refresh`, `/logout`, `/me`, `/admin-only`. The module has been through a security review with the findings fixed.
+- **Authorization**: every endpoint requires an authenticated user by default (`FallbackPolicy`), except an explicit `AllowAnonymous` allowlist: register, login, refresh, logout, the health endpoints, and Scalar/OpenAPI in Development ([ADR-0016](docs/adr/0016-authenticated-by-default-with-anonymous-allowlist.md)).
 - **Budgeting**: full envelope CRUD (create, read, paginated list, update, delete) and a monthly allocation report, with categories seeded in a migration.
-  - **Caching**: HybridCache cache-aside for the envelope list and the monthly report with per-entry TTLs, tag-based invalidation on writes (`BudgetingCachePolicy` plus `RemoveByTagAsync`), and output caching with Brotli/Gzip compression on the two read-heavy endpoints, evicted through the `IOutputCacheInvalidator` port.
-  - **CDN and object storage**: receipt upload to MinIO over the S3 API (AWSSDK.S3), validated by magic bytes, with a server-generated object key and a `Receipt` pointer row in Postgres. `POST /receipts` uploads; `GET /receipts/{id}` answers 302 with a presigned URL and `Cache-Control`.
-  - **Realtime**: a strongly-typed `Hub<IEnvelopeClient>` at `/hubs/envelopes`, one group per envelope, pushing `EnvelopeUpdated`, `EnvelopeAlert` and `EnvelopeDeleted`. The Application layer only knows the `IEnvelopeRealtimeNotifier` port, not SignalR.
+  - **Caching**: HybridCache cache-aside for the envelope list and the monthly report with per-entry TTLs, tag-based invalidation on writes (`BudgetingCachePolicy` plus `RemoveByTagAsync`), and output caching with Brotli/Gzip compression on the two read-heavy endpoints, varied by the caller's identity so authorization did not have to turn caching off, evicted through the `IOutputCacheInvalidator` port.
+  - **CDN and object storage**: receipt upload to MinIO over the S3 API (AWSSDK.S3), validated by magic bytes, with a server-generated object key and a `Receipt` pointer row in Postgres. `POST /api/v1/receipts` uploads; `GET /api/v1/receipts/{id}` answers 302 with a presigned URL and `Cache-Control`.
+  - **Realtime**: a strongly-typed `Hub<IEnvelopeClient>` at `/api/v1/hubs/envelopes`, one group per envelope, pushing `EnvelopeUpdated`, `EnvelopeAlert` and `EnvelopeDeleted`. The Application layer only knows the `IEnvelopeRealtimeNotifier` port, not SignalR.
   - **Balance and overspend protection**: `Envelope` holds `Spent`, computes `Remaining` from `Allocated - Spent`, and mutates through `Spend`, `Release` and `Fund`. Spending past the balance returns a domain error rather than going negative.
-- **Ledger**: the `Transaction` aggregate with `TransactionState` (`Posted`, `Reversed`, `Confirmed`), `POST /transactions` answering **202 Accepted** and processing asynchronously, and `GET /transactions/{id}` for status.
+- **Ledger**: the `Transaction` aggregate with `TransactionState` (`Posted`, `Reversed`, `Confirmed`), `POST /api/v1/transactions` answering **202 Accepted** and processing asynchronously. `GET /api/v1/transactions/{id}/status` is the status resource and answers `303 See Other` once it settles; `GET /api/v1/transactions/{id}` is the transaction itself ([ADR-0015](docs/adr/0015-transaction-status-splits-to-sub-resource.md)). Status lives in Postgres, with a background service pruning rows past their retention window.
   - **Messaging and outbox**: Wolverine in-process, Dynamic codegen in development and Auto in production ([ADR-0013](docs/adr/0013-wolverine-auto-codegen-in-production.md)), message store on the `wolverine` schema, `AddDbContextWithWolverineIntegration` so writing a `Transaction` and enqueuing its message share one transaction. `DbUpdateConcurrencyException` gets its own retry-with-cooldown policy before the message moves to the error queue.
-  - **Idempotency**: `Idempotency-Key` on `POST /transactions` backed by `IIdempotencyStore`, with a request fingerprint so a reused key carrying a different payload is rejected with 422 rather than silently replayed. On the consumer side, a `ProcessedTransaction` table makes the Budgeting handler idempotent, so a redelivered message does not deduct twice.
+  - **Idempotency**: `Idempotency-Key` on `POST /api/v1/transactions` backed by `IIdempotencyStore`, with a request fingerprint so a reused key carrying a different payload is rejected with 422 rather than silently replayed. On the consumer side, a `ProcessedTransaction` table makes the Budgeting handler idempotent, so a redelivered message does not deduct twice.
 - **Integration events** in `Finmy.Contracts`: `TransactionPostedEvent`, `EnvelopeOverspentEvent`, `EnvelopeBalanceChangedEvent`. The full chain is described under [Transaction write path](#transaction-write-path).
-- **Tests**: unit tests for the Envelope domain (create, update, spend, fund), `EnvelopeService`, cache policy, alert policy, the receipt validator and the Transaction domain; an integration test for the concurrent-spend race running against real Postgres through Testcontainers.
+- **Operations**: `GET /health/live` and `GET /health/ready` (the latter probing Postgres, Redis and S3/MinIO), a global authenticated fallback policy, rate limiting on all endpoints with a tighter policy on login/register/refresh, and a migration strategy that survives more than one replica ([ADR-0014](docs/adr/0014-migration-strategy-for-multiple-replicas.md)).
+- **Tests**: unit tests for the Envelope domain (create, update, spend, fund), `EnvelopeService`, cache policy, alert policy, the receipt validator and the Transaction domain; integration tests for the concurrent-spend race, the async transaction lifecycle, rate limiting and pruning, all running against real Postgres, Redis and MinIO through Testcontainers.
 - `Result<T>`, `Error` and `ErrorType` in SharedKernel, a `GlobalExceptionHandler` returning ProblemDetails without leaking stack traces, and `ValidationFilter<T>` with FluentValidation rejecting bad input at the endpoint.
 - OpenAPI plus Scalar UI in Development.
 - Docker Compose for the whole system: PostgreSQL 17, Redis 8, MinIO, a one-shot migration service, and the API itself. `git clone` then `docker compose up` brings up a working system with no manual steps.
 - A multi-stage Dockerfile publishing a non-root, framework-dependent image, and GitHub Actions for build, test, architecture tests, coverage, CodeQL and a vulnerable-package gate, with a release workflow pushing tagged images to GHCR.
-- Thirteen ADRs plus `docs/naming-conventions.md`, and `docs/TECH-DEBT.md` listing known gaps.
+- Sixteen ADRs plus `docs/naming-conventions.md`, and `docs/TECH-DEBT.md` listing known gaps.
 
-**Not built yet:** Space, Account, Member and per-Space authorization; CSV statement import with deduplication; a durable transaction status store (still in memory, so restarting loses it); Serilog and OpenTelemetry; rate limiting and API versioning.
-
-Endpoints in Budgeting and Ledger are currently unauthenticated. That is a known gap, tracked as item 1 in [TECH-DEBT.md](docs/TECH-DEBT.md), and it is fixed before any public deployment.
+**Not built yet:** Space, Account, Member and per-Space authorization; CSV statement import with deduplication; Serilog and OpenTelemetry.
 
 ---
 
@@ -176,7 +176,7 @@ cd finmy
 
 docker compose -f docker/docker-compose.yml up -d --build
 
-# API:            http://localhost:8080/health
+# API:            http://localhost:8080/health/live
 # MinIO console:   http://localhost:9001
 ```
 
@@ -301,6 +301,9 @@ Significant decisions are recorded as ADRs:
 - [ADR-0011: Recording a transaction is an async 202 Accepted with a status resource](docs/adr/0011-async-request-reply-202.md)
 - [ADR-0012: Stay a modular monolith through the production phases; extract Identity first if a split becomes necessary](docs/adr/0012-defer-microservice-split.md)
 - [ADR-0013: Run production Wolverine handlers with `TypeLoadMode.Auto`, not `Static`](docs/adr/0013-wolverine-auto-codegen-in-production.md)
+- [ADR-0014: Migration strategy for multiple replicas](docs/adr/0014-migration-strategy-for-multiple-replicas.md)
+- [ADR-0015: The transaction status resource splits to a sub-resource and answers `303 See Other`](docs/adr/0015-transaction-status-splits-to-sub-resource.md)
+- [ADR-0016: Authenticated by default, with an explicit anonymous allowlist](docs/adr/0016-authenticated-by-default-with-anonymous-allowlist.md)
 
 ---
 
@@ -317,7 +320,7 @@ The phase plan is in [docs/ROADMAP.md](docs/ROADMAP.md); known gaps are tracked 
 - [x] Idempotency: `Idempotency-Key` on writes plus a consumer dedup table
 - [x] Build and quality gates: analyzers, coverage, NetArchTest, HTTP-level integration tests
 - [x] Packaging and CI/CD: Dockerfile, GitHub Actions, image publishing
-- [ ] Production hardening: health checks, authorization, rate limiting, API versioning, durable status store
+- [x] Production hardening: health checks, authorization, rate limiting, API versioning, durable status store
 - [ ] Observability: Serilog plus OpenTelemetry into a self-hosted Grafana stack
 - [ ] Deployment: Helm on k3s, Terraform, TLS, encrypted secrets
 - [ ] Space, membership and per-Space authorization

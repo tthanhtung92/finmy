@@ -8,9 +8,6 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 
 | # | Debt | Phase |
 |---|---|---|
-| 1 | **Budgeting and Ledger endpoints have no `RequireAuthorization()`.** Only `IdentityDemoEndpoints.cs` has it. Anyone can `POST /transactions`, and anyone who knows a `transactionId` can read its status. The HTTP tests call those endpoints without a token, so closing this gap also means teaching `FinmyApiFactory` to mint one and send it on every request. | 3 |
-| 2 | **`InMemoryTransactionStatusStore` keeps request state in RAM.** Lost on restart, wrong across instances. The store also sits outside the transaction, so it can report a state the database never reached: if the commit fails after the handler wrote `Succeeded`, the client still reads `Succeeded` for a transaction that does not exist. The `ITransactionRequestStatusStore` port stays; only the adapter moves to Postgres. | 3 |
-| 3 | **No retention policy for the status resource.** Once the store lives in the database, every request leaves a row behind forever. MS guidance suggests an `Expires` header so clients know the retention window. | 3 |
 | 4 | **`AutoBuildMessageStorageOnStartup` left at its default**, so Wolverine creates its tables at startup. Production should use `AutoCreate.None` and run `resources setup` as an explicit deploy step. | 5 |
 
 ## Correctness and operations
@@ -18,7 +15,6 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 | # | Debt | Phase |
 |---|---|---|
 | 7 | **`Transaction.EnvelopeId` is never checked for existence.** There is no FK to `budgeting.envelopes`, deliberately, since a cross-schema FK would hard-wire two modules together, and nothing replaces it. A transaction pointing at a nonexistent envelope currently lands in the dead letter queue instead of being reversed automatically. | 6 |
-| 8 | **No `GET /transactions/{id}` returning the transaction itself**, so the status endpoint cannot answer `303 See Other` on completion. The data is in the database now, so this is a matter of choosing to do it rather than being unable to. | 3 |
 | 9 | **`UnreachableException` in the `default` arm of the `TransactionDirection` switches** (`TransactionPostedHandler.cs:42`, `RecordTransactionHandler.cs:65`) relies on a guarantee that does not hold. `Enum.IsDefined` only guards the creation path. Messages travel over the wire as numbers and can be replayed from the outbox after a new enum member is added, at which point the exception name describes something other than what happened. | |
 | 10 | **Envelope alerts are level-triggered.** Once an envelope drops below the 20% threshold, every later transaction fires an alert instead of firing once on the crossing. Edge-triggering needs previous state (a column on `Envelope` or an alert history table) plus an answer to the harder question of how it resets at the start of a new period. | |
 
@@ -27,7 +23,6 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 | # | Debt | Phase |
 |---|---|---|
 | 11 | **SignalR groups are keyed per envelope and need to move to per space.** The seam is already in place: group names are produced in exactly one spot, `EnvelopeGroups.ForEnvelope(Guid)`. With Space, three things change. Add `SpaceId` to `Envelope` (migration plus a default space for existing envelopes), switch the group key from `envelope-{id}` to `space-{spaceId}`, and have the client `invoke("WatchSpace", spaceId)` instead of watching each envelope. Hub, port, adapter and DI stay as they are. | 6 |
-| 12 | **Output caching works today only because the report and list endpoints are anonymous.** Once they are behind authorization, output caching skips requests carrying an `Authorization` header by default, which is the safety net against serving one user's cache to another. The choice then is to drop output caching on authorized endpoints, or write a policy that varies by identity so each user gets their own slot. | 3 |
 | 13 | **Anything summing spend has to filter on `TransactionState`.** Since `Reversed` exists, every rollup needs the filter or reversed transactions keep counting. | 6 |
 
 ## Configuration ownership
@@ -41,7 +36,6 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 | # | Debt | Phase |
 |---|---|---|
 | 15 | **`docker/docker-compose.yml` ships a development-only `Jwt__SigningKey` default in a tracked file**, so `docker compose up` works with no `.env` at all. Fine for a laptop; a real deployment needs a real secret supplied through the environment, which is Phase 5's Sealed Secrets or SOPS work, not this file. | 5 |
-| 16 | **The `migrate` compose service is a single, unlocked writer.** `dotnet ef database update` takes EF's own migration lock, so one instance racing another mostly resolves itself, but nothing coordinates the case where two nodes start a rolling deploy at once. It is the smallest thing that satisfies `docker compose up` today; the real multi-replica migration strategy is the open item already listed under Phase 3 above. | 3 |
 | 17 | **`docker/docker-compose.local.yml` is a standalone duplicate of `docker-compose.yml`, not an override layer**, so it drifted out of sync the moment `api` and `migrate` were added to the base file. It also maps pgadmin to host port 8080, which `api` now uses, so the two compose files cannot run together as they stand. | |
 | 18 | **The production image ships Roslyn.** `TypeLoadMode.Auto` ([ADR-0013](adr/0013-wolverine-auto-codegen-in-production.md)) generates handler wrappers at runtime when no pre-built types are on disk, so `WolverineFx.RuntimeCompilation` has to be in the image. Baking `codegen write` output in at build time would drop it, at the cost of a two-pass build; worth it only if image size or cold start become measured problems. | 5 |
 
