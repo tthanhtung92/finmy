@@ -21,3 +21,4 @@ This directory is Finmy's record of why. Each ADR captures one architectural dec
 | [0015](0015-transaction-status-splits-to-sub-resource.md) | The transaction status resource splits to a sub-resource and answers `303 See Other` | Accepted | 2026-08-05 |
 | [0016](0016-authenticated-by-default-with-anonymous-allowlist.md) | Budgeting and Ledger require an authenticated user by default; the output cache varies by identity instead of being dropped | Accepted | 2026-08-05 |
 | [0017](0017-observability-shape.md) | Observability is OTLP-first, with a shared ActivitySource in SharedKernel and alerting provisioned in Grafana | Accepted | 2026-08-05 |
+| [0018](0018-self-hosted-deployment-shape.md) | Self-hosted deployment shape: in-cluster data tier, SOPS-encrypted secrets, Helm-on-tag CD | Accepted | 2026-08-05 |
