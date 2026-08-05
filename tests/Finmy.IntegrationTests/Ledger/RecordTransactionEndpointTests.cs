@@ -17,7 +17,7 @@ using Wolverine.Tracking;
 namespace Finmy.IntegrationTests.Ledger;
 
 /// <summary>
-/// Drives POST /transactions over HTTP and follows the anti-overspend loop to its end.
+/// Drives POST /api/v1/transactions over HTTP and follows the anti-overspend loop to its end.
 ///
 /// Waiting uses Wolverine's tracked session rather than Task.Delay, so a test fails because
 /// the message was not handled, not because a sleep was too short.
@@ -33,12 +33,12 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         var envelopeId = await SeedEnvelopeAsync(allocated: 1_000m);
         var spaceId = Guid.CreateVersion7();
 
-        using var client = factory.CreateClient();
+        using var client = await factory.CreateAuthenticatedClientAsync(TestContext.Current.CancellationToken);
 
         var session = await factory.Services.ExecuteAndWaitAsync(
             async () =>
             {
-                var response = await client.PostAsJsonAsync("/transactions", new
+                var response = await client.PostAsJsonAsync("/api/v1/transactions", new
                 {
                     spaceId,
                     envelopeId,
@@ -71,12 +71,12 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         var envelopeId = await SeedEnvelopeAsync(allocated: 100m);
         var spaceId = Guid.CreateVersion7();
 
-        using var client = factory.CreateClient();
+        using var client = await factory.CreateAuthenticatedClientAsync(TestContext.Current.CancellationToken);
 
         var session = await factory.Services.ExecuteAndWaitAsync(
             async () =>
             {
-                var response = await client.PostAsJsonAsync("/transactions", new
+                var response = await client.PostAsJsonAsync("/api/v1/transactions", new
                 {
                     spaceId,
                     envelopeId,
@@ -107,7 +107,7 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         var spaceId = Guid.CreateVersion7();
         var idempotencyKey = $"test-{Guid.CreateVersion7()}";
 
-        using var client = factory.CreateClient();
+        using var client = await factory.CreateAuthenticatedClientAsync(TestContext.Current.CancellationToken);
 
         var payload = new
         {
@@ -145,9 +145,27 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         envelope.Spent.ShouldBe(40m, "and it must not deduct twice either");
     }
 
+    [Fact]
+    public async Task Posting_without_a_token_is_rejected()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/v1/transactions", new
+        {
+            spaceId = Guid.CreateVersion7(),
+            envelopeId = Guid.CreateVersion7(),
+            amount = 10m,
+            direction = 0,
+            occurredOn = DateTimeOffset.UtcNow,
+            description = "No token"
+        }, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
     private static HttpRequestMessage BuildRequest(object payload, string idempotencyKey)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/transactions")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/transactions")
         {
             Content = JsonContent.Create(payload)
         };

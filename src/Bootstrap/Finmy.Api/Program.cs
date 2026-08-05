@@ -91,14 +91,14 @@ app.UseModules();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 
 // The process is up; no dependency probing. Kubernetes/Docker use this to decide whether to
 // restart the container, so it must never fail because a downstream dependency is unhealthy.
-// AllowAnonymous/DisableRateLimiting: no fallback auth policy or rate limiter exists yet, but
-// both land later this phase and a health probe must never be gated by either.
+// AllowAnonymous/DisableRateLimiting: rate limiting lands later this phase and a health probe
+// must never be gated by it.
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false })
     .AllowAnonymous()
     .DisableRateLimiting();

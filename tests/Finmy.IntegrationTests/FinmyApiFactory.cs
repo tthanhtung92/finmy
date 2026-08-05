@@ -1,4 +1,8 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+
 using Finmy.Budgeting.Infrastructure.Persistence;
+using Finmy.Identity.Application.Authentication.Dtos;
 using Finmy.Identity.Infrastructure.Persistence;
 using Finmy.Ledger.Infrastructure.Persistence;
 
@@ -43,6 +47,66 @@ public sealed class FinmyApiFactory : WebApplicationFactory<Program>, IAsyncLife
     private readonly RedisContainer _redis = new RedisBuilder("redis:7.4-alpine").Build();
 
     private readonly MinioContainer _minio = new MinioBuilder("minio/minio:RELEASE.2025-04-22T22-12-26Z").Build();
+
+    private readonly SemaphoreSlim _authLock = new(1, 1);
+    private string? _accessToken;
+
+    /// <summary>
+    /// Budgeting and Ledger endpoints require an authenticated user (TECH-DEBT #1), so every
+    /// HTTP test needs a token. Registering and logging in through the real endpoints, rather
+    /// than minting a JWT by hand from the signing key set in ConfigureWebHost, is worth more:
+    /// it exercises the actual auth path the tests otherwise never touch. The token is cached
+    /// after the first call and reused, guarded by a semaphore since xUnit can run test methods
+    /// in the same class in parallel.
+    /// </summary>
+    public async Task<HttpClient> CreateAuthenticatedClientAsync(CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", await GetAccessTokenAsync(cancellationToken));
+
+        return client;
+    }
+
+    private async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
+    {
+        if (_accessToken is not null)
+        {
+            return _accessToken;
+        }
+
+        await _authLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (_accessToken is not null)
+            {
+                return _accessToken;
+            }
+
+            using var client = CreateClient();
+            const string email = "integration-tests@finmy.local";
+            const string password = "Integration-Tests-Password-1";
+
+            // Registration fails with a conflict on the second test class to call this, which
+            // is fine: the fixture is shared across the whole collection (ApiCollection), so
+            // the user only needs to exist once.
+            await client.PostAsJsonAsync("/api/v1/identity/register", new RegisterRequest(email, password), cancellationToken);
+
+            var loginResponse = await client.PostAsJsonAsync("/api/v1/identity/login", new LoginRequest(email, password), cancellationToken);
+            loginResponse.EnsureSuccessStatusCode();
+
+            var authResult = await loginResponse.Content.ReadFromJsonAsync<AuthResult>(cancellationToken)
+                ?? throw new InvalidOperationException("Login response had no body.");
+
+            _accessToken = authResult.AccessToken;
+
+            return _accessToken;
+        }
+        finally
+        {
+            _authLock.Release();
+        }
+    }
 
     public async ValueTask InitializeAsync()
     {

@@ -16,16 +16,22 @@ public static class IdentityCoreEndpoints
         var group = endpoints.MapGroup("/identity");
 
         group.MapPost("/register", RegisterAsync)
-            .AddEndpointFilter<ValidationFilter<RegisterRequest>>();
+            .AddEndpointFilter<ValidationFilter<RegisterRequest>>()
+            .AllowAnonymous();
 
         group.MapPost("/login", LoginAsync)
-            .AddEndpointFilter<ValidationFilter<LoginRequest>>();
+            .AddEndpointFilter<ValidationFilter<LoginRequest>>()
+            .AllowAnonymous();
 
         group.MapPost("/refresh", RefreshAsync)
-            .AddEndpointFilter<ValidationFilter<RefreshRequest>>();
+            .AddEndpointFilter<ValidationFilter<RefreshRequest>>()
+            .AllowAnonymous();
 
+        // Anonymous on purpose: logout revokes a refresh token the caller already holds, and
+        // requiring a live access token would make logout impossible once it has expired.
         group.MapPost("/logout", LogoutAsync)
-            .AddEndpointFilter<ValidationFilter<RefreshRequest>>();
+            .AddEndpointFilter<ValidationFilter<RefreshRequest>>()
+            .AllowAnonymous();
     }
 
     private static async Task<IResult> RegisterAsync(RegisterRequest req, AuthService svc)
