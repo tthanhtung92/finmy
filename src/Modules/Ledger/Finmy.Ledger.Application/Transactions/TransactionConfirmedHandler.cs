@@ -1,5 +1,6 @@
 ﻿using Finmy.Contracts.Budgeting;
 using Finmy.Ledger.Application.Abstractions;
+using Finmy.SharedKernel.Observability;
 
 using Microsoft.Extensions.Logging;
 
@@ -13,6 +14,9 @@ public partial class TransactionConfirmedHandler(
 {
     public async Task HandleAsync(EnvelopeBalanceChangedEvent message, CancellationToken cancellationToken)
     {
+        using var activity = FinmyTelemetry.AntiOverspend.StartActivity("ledger.confirm_transaction");
+        activity?.SetTag("transaction.id", message.TransactionId);
+
         var transaction = await repository.GetByIdAsync(message.TransactionId, cancellationToken);
 
         if (transaction is null)

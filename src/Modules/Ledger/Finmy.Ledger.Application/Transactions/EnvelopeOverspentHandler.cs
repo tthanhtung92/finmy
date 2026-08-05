@@ -1,6 +1,7 @@
 using Finmy.Contracts.Budgeting;
 using Finmy.Ledger.Application.Abstractions;
 using Finmy.Ledger.Domain.Transactions;
+using Finmy.SharedKernel.Observability;
 
 using Microsoft.Extensions.Logging;
 
@@ -14,6 +15,10 @@ public sealed partial class EnvelopeOverspentHandler(
 {
     public async Task HandleAsync(EnvelopeOverspentEvent message, CancellationToken cancellationToken)
     {
+        using var activity = FinmyTelemetry.AntiOverspend.StartActivity("ledger.reverse_transaction");
+        activity?.SetTag("transaction.id", message.TransactionId);
+        activity?.SetTag("envelope.id", message.EnvelopeId);
+
         var transaction = await repository.GetByIdAsync(message.TransactionId, cancellationToken);
 
         if (transaction is null)

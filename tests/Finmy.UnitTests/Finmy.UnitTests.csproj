@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Bootstrap\Finmy.Api\Finmy.Api.csproj" />
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Api\Finmy.Budgeting.Api.csproj" />
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Application\Finmy.Budgeting.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\Budgeting\Finmy.Budgeting.Domain\Finmy.Budgeting.Domain.csproj" />

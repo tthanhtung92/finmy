@@ -71,6 +71,26 @@
     <PackageVersion Include="AWSSDK.S3" Version="4.0.16" />
   </ItemGroup>
 
+  <ItemGroup Label="Observability">
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Settings.Configuration" Version="10.0.1" />
+    <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
+    <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
+    <!-- Only a beta exists for this instrumentation package at time of writing; the roadmap
+         explicitly asks for Redis tracing, and there is no stable release to fall back to. -->
+    <PackageVersion Include="OpenTelemetry.Instrumentation.StackExchangeRedis" Version="1.17.0-beta.1" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
+    <!-- Needed directly (not just transitively via Caching.StackExchangeRedis, which only pins
+         >= 2.7.27) to build the IConnectionMultiplexer singleton that both HybridCache's L2 and
+         the Redis trace instrumentation share. Held on the 2.x line: 3.x is a breaking rewrite
+         and the instrumentation package above targets the 2.x API. -->
+    <PackageVersion Include="StackExchange.Redis" Version="2.13.17" />
+  </ItemGroup>
+
   <ItemGroup Label="Analyzers">
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.31.0.145097" />
     <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" />

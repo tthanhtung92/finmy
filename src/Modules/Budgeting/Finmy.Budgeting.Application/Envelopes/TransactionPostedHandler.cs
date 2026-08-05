@@ -4,6 +4,7 @@ using Finmy.Budgeting.Application.Abstractions;
 using Finmy.Budgeting.Domain.Envelopes;
 using Finmy.Contracts.Budgeting;
 using Finmy.Contracts.Ledger;
+using Finmy.SharedKernel.Observability;
 
 using Microsoft.Extensions.Logging;
 
@@ -19,6 +20,10 @@ public sealed partial class TransactionPostedHandler(
 {
     public async Task<OutgoingMessages> HandleAsync(TransactionPostedEvent message, CancellationToken cancellationToken)
     {
+        using var activity = FinmyTelemetry.AntiOverspend.StartActivity("budgeting.apply_transaction");
+        activity?.SetTag("transaction.id", message.TransactionId);
+        activity?.SetTag("envelope.id", message.EnvelopeId);
+
         var outgoing = new OutgoingMessages();
 
         var wasApplied = await processedTransactionStore.WasAppliedAsync(message.TransactionId, cancellationToken);
@@ -26,6 +31,7 @@ public sealed partial class TransactionPostedHandler(
         if (wasApplied)
         {
             LogAlreadyApplied(logger, message.TransactionId);
+            activity?.SetTag("outcome", "duplicate");
 
             return outgoing;
         }
@@ -47,6 +53,8 @@ public sealed partial class TransactionPostedHandler(
             processedTransactionStore.MarkApplied(message.TransactionId, message.EnvelopeId, message.Amount, timeProvider.GetUtcNow());
 
             LogEnvelopeChanged(logger, message.EnvelopeId, action);
+            activity?.SetTag("outcome", "applied");
+            activity?.SetTag("envelope.remaining", envelope.Remaining);
 
             outgoing.Add(new EnvelopeBalanceChangedEvent(
                 message.TransactionId,
@@ -68,6 +76,9 @@ public sealed partial class TransactionPostedHandler(
         if (result.Error == EnvelopeErrors.InsufficientFunds)
         {
             LogEnvelopeChangeRejected(logger, message.EnvelopeId, action, result.Error.Code);
+            activity?.SetTag("outcome", "overspent");
+            activity?.SetTag("envelope.remaining", envelope.Remaining);
+            FinmyTelemetry.EnvelopesOverspent.Add(1, new KeyValuePair<string, object?>("action", action));
 
             outgoing.Add(new EnvelopeOverspentEvent(
                 message.TransactionId,
