@@ -5,6 +5,7 @@ using Finmy.Modularity.Filters;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 
 namespace Finmy.Identity.Api.Endpoints;
@@ -17,15 +18,18 @@ public static class IdentityCoreEndpoints
 
         group.MapPost("/register", RegisterAsync)
             .AddEndpointFilter<ValidationFilter<RegisterRequest>>()
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting("auth");
 
         group.MapPost("/login", LoginAsync)
             .AddEndpointFilter<ValidationFilter<LoginRequest>>()
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting("auth");
 
         group.MapPost("/refresh", RefreshAsync)
             .AddEndpointFilter<ValidationFilter<RefreshRequest>>()
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting("auth");
 
         // Anonymous on purpose: logout revokes a refresh token the caller already holds, and
         // requiring a live access token would make logout impossible once it has expired.

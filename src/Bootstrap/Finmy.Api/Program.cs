@@ -17,6 +17,8 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 using Scalar.AspNetCore;
 
+using System.Threading.RateLimiting;
+
 using Wolverine;
 using Wolverine.ErrorHandling;
 using Wolverine.Postgresql;
@@ -45,6 +47,42 @@ builder.Services.AddResponseCompression(options =>
     options.EnableForHttps = true;
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    // Partition by the authenticated user where there is one, falling back to remote IP for
+    // anonymous requests (register/login/refresh) so one caller cannot starve another.
+    // Read once at startup rather than through AddOptions/ValidateOnStart: these are operating
+    // knobs, not fail-fast invariants, so a sensible default if unset is the right behaviour.
+    var permitLimit = builder.Configuration.GetValue("RateLimiting:PermitLimit", 100);
+    var windowSeconds = builder.Configuration.GetValue("RateLimiting:WindowSeconds", 60);
+    var authPermitLimit = builder.Configuration.GetValue("RateLimiting:AuthPermitLimit", 10);
+    var authWindowSeconds = builder.Configuration.GetValue("RateLimiting:AuthWindowSeconds", 60);
+
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirst("sub")?.Value ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromSeconds(windowSeconds)
+            }));
+
+    // Login/register/refresh are the endpoints worth brute-forcing, so they get a tighter
+    // named policy on top of the global limit rather than relying on the global limit alone.
+    options.AddFixedWindowLimiter("auth", o =>
+    {
+        o.PermitLimit = authPermitLimit;
+        o.Window = TimeSpan.FromSeconds(authWindowSeconds);
+    });
+
+    options.OnRejected = (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = "60";
+        return ValueTask.CompletedTask;
+    };
 });
 builder.Services.AddHealthChecks()
     .AddCheck<DbContextHealthCheck<IdentityDbContext>>("identity-db", tags: ["ready"])
@@ -84,6 +122,7 @@ app.UseResponseCompression();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.UseOutputCache();
 app.UseStaticFiles();
