@@ -171,6 +171,13 @@ public sealed class FinmyApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
         // Seeding an admin needs a live Identity store and adds nothing these tests assert on.
         builder.UseSetting("IdentitySeed:IsSeedAdmin", "false");
+
+        // The production default (10 per 60s) is tight enough that ordinary test traffic can
+        // trip it: every test class needing its first token calls register+login, and on a
+        // resource-constrained CI runner those calls can queue up within one window. Only
+        // RateLimitingTests wants the real ceiling, and it opts back into a low one itself via
+        // WithWebHostBuilder on its own isolated factory.
+        builder.UseSetting("RateLimiting:AuthPermitLimit", "10000");
     }
 
     /// <summary>
