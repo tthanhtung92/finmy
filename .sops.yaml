@@ -1,0 +1,6 @@
+creation_rules:
+  # [/\\] rather than a literal /: sops resolves this path with the host OS's
+  # separator before matching, so a literal forward slash never matches on
+  # Windows even though the same rule works unmodified in Linux CI.
+  - path_regex: deploy[/\\]values-prod\.sops\.yaml$
+    age: age19wacdytwa88w6eeywramcvk63wx38hq6x6w6sknkj5wqkh3jjyzsue4xpp

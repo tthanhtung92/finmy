@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finmy-api
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  selector:
+    matchLabels:
+      app: finmy-api
+  # maxUnavailable: 0 keeps old replicas serving traffic while new ones sit
+  # not-Ready behind the migrate Job (see migrate-job.yaml). Raising it back
+  # to the k8s default reopens the downtime window that pairing exists to
+  # close.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: finmy-api
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.api.port }}
+          envFrom:
+            - secretRef:
+                name: finmy-secrets
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+            - name: IdentitySeed__IsSeedAdmin
+              value: "false"
+            - name: OpenTelemetry__OtlpEndpoint
+              value: {{ .Values.otel.otlpEndpoint | quote }}
+          # 60s budget for a cold start that includes a Roslyn codegen pass
+          # (ADR-0013's TypeLoadMode.Auto) on the first handler invocation.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: {{ .Values.api.port }}
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: {{ .Values.api.port }}
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: {{ .Values.api.port }}
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+            # Stays false: TypeLoadMode.Auto (ADR-0013) writes generated handler
+            # wrappers to /app/Internal at first handler invocation, which a
+            # read-only rootfs would fail at runtime, hours after a green
+            # deploy, not at startup. TECH-DEBT #18 (bake `codegen write` into
+            # the image) is the real path to true, and is optional this phase.
+            readOnlyRootFilesystem: false

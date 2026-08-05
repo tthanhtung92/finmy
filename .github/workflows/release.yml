@@ -39,3 +39,53 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The Helm migrate Job (deploy/helm/finmy/templates/migrate-job.yaml)
+      # needs this image for its EF migration initContainer; nothing published
+      # it before this phase, since release.yml only pushed `target: final`.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: migrator
+          push: true
+          tags: ghcr.io/${{ github.repository }}/migrator:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Guarded by a repo variable rather than the tag push alone, so tagging a
+  # release doesn't fail red while no cluster exists yet to deploy to (see
+  # deploy/terraform/README.md: Terraform here has never been applied).
+  # `environment: production` scopes the secrets below to this job and gives
+  # a manual-approval gate if one is configured on that environment.
+  deploy:
+    needs: publish
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: azure/setup-helm@v4
+
+      - name: Install sops
+        run: |
+          curl -sL -o /usr/local/bin/sops https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3.9.4.linux.amd64
+          chmod +x /usr/local/bin/sops
+
+      - name: Decrypt production secrets
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: sops -d deploy/values-prod.sops.yaml > "$RUNNER_TEMP/secrets.yaml"
+
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > "$RUNNER_TEMP/kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"
+
+      - name: helm upgrade
+        run: |
+          helm upgrade --install finmy deploy/helm/finmy \
+            -f "$RUNNER_TEMP/secrets.yaml" \
+            --set image.tag=${{ github.ref_name }} \
+            --set image.migratorRepository=ghcr.io/${{ github.repository }}/migrator \
+            --wait --timeout 10m

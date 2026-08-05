@@ -1,0 +1,68 @@
+# ponytail: nightly pg_dump piped to whatever `backup.s3` points at (the
+# in-cluster MinIO by default). A backup living on the same disk as the data
+# it backs up survives `DROP TABLE`, not disk loss — point `backup.s3.endpoint`
+# at an offsite bucket, with its own access/secret keys, once the data actually
+# matters. Today it reuses the MinIO root credentials because the default
+# target *is* that MinIO; an offsite target needs its own secret, not added
+# here.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: finmy-backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: dump
+              emptyDir: {}
+          initContainers:
+            - name: pg-dump
+              image: {{ .Values.postgres.image | quote }}
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  pg_dump -h finmy-postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc \
+                    > /backup/finmy-$(date +%Y%m%d-%H%M%S).dump
+              env:
+                - name: PGPASSWORD
+                  value: {{ required "secrets.postgresPassword is required" .Values.secrets.postgresPassword | quote }}
+                - name: POSTGRES_USER
+                  value: {{ .Values.postgres.user | quote }}
+                - name: POSTGRES_DB
+                  value: {{ .Values.postgres.database | quote }}
+              volumeMounts:
+                - name: dump
+                  mountPath: /backup
+          containers:
+            - name: upload
+              image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  mc alias set backup "$BACKUP_ENDPOINT" "$BACKUP_ACCESS_KEY" "$BACKUP_SECRET_KEY"
+                  mc mb --ignore-existing "backup/$BACKUP_BUCKET"
+                  mc cp /backup/*.dump "backup/$BACKUP_BUCKET/"
+              env:
+                - name: BACKUP_ENDPOINT
+                  value: {{ .Values.backup.s3.endpoint | quote }}
+                - name: BACKUP_BUCKET
+                  value: {{ .Values.backup.s3.bucket | quote }}
+                - name: BACKUP_ACCESS_KEY
+                  value: {{ required "secrets.minioRootUser is required" .Values.secrets.minioRootUser | quote }}
+                - name: BACKUP_SECRET_KEY
+                  value: {{ required "secrets.minioRootPassword is required" .Values.secrets.minioRootPassword | quote }}
+              volumeMounts:
+                - name: dump
+                  mountPath: /backup

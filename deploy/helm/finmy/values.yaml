@@ -1,0 +1,88 @@
+# Everything non-secret. Secret values (deploy/values-prod.sops.yaml) are
+# merged in at deploy time with `helm upgrade -f`; every key under `secrets`
+# below is an empty placeholder so `helm template`/`helm lint` render clean in
+# CI with no decryption step.
+
+image:
+  repository: ghcr.io/tthanhtung92/finmy
+  migratorRepository: ghcr.io/tthanhtung92/finmy/migrator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+api:
+  replicaCount: 2
+  port: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  pdb:
+    minAvailable: 1
+
+ingress:
+  className: traefik # k3s's bundled controller
+  host: finmy.example.com
+  clusterIssuer: letsencrypt-prod
+  tlsSecretName: finmy-api-tls
+
+# Empty disables OTLP export entirely, same as bare `dotnet run` (see CLAUDE.md).
+otel:
+  otlpEndpoint: ""
+
+postgres:
+  image: postgres:17.10-alpine
+  storageSize: 5Gi
+  database: finmy_db
+  user: finmy
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  image: redis:8.6.4-alpine
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+minio:
+  image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+  storageSize: 10Gi
+  bucket: receipts
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ponytail: nightly pg_dump into the in-cluster MinIO by default. A backup
+# living on the same node as the data it backs up is not a real backup — set
+# backup.s3.endpoint to an offsite bucket once the data actually matters.
+backup:
+  schedule: "0 3 * * *"
+  s3:
+    endpoint: "http://finmy-minio:9000"
+    bucket: finmy-backups
+
+# Placeholders only — real values come from deploy/values-prod.sops.yaml.
+secrets:
+  jwtSigningKey: ""
+  postgresPassword: ""
+  minioRootUser: ""
+  minioRootPassword: ""

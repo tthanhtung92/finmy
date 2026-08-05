@@ -499,3 +499,15 @@ docs/superpowers/
 
 # Understand Anything
 .ua/
+
+# Terraform (deploy/terraform) — the lock file is committed, everything
+# state- and credential-shaped is not.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
+# SOPS/age — the encrypted values file is committed, the private key never is.
+*.agekey
+

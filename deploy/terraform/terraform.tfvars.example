@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars (gitignored) and fill in real values.
+# This configuration has never been applied — see README.md before running
+# `terraform apply` for the first time.
+
+hcloud_token     = "changeme"
+hetznerdns_token = "changeme"
+ssh_public_key   = "ssh-ed25519 AAAA... you@example.com"
+admin_cidr       = "203.0.113.4/32"
+dns_zone_name    = "example.com"
+hostname         = "finmy.example.com"
+acme_email       = "you@example.com"
