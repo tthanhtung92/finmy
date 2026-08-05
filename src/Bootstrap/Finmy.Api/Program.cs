@@ -1,10 +1,16 @@
 using Finmy.Api.Extensions;
+using Finmy.Api.HealthChecks;
 using Finmy.Api.Middleware;
+using Finmy.Budgeting.Infrastructure.Persistence;
+using Finmy.Identity.Infrastructure.Persistence;
+using Finmy.Ledger.Infrastructure.Persistence;
 
 using JasperFx;
 using JasperFx.CodeGeneration;
 using JasperFx.Core;
 
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -40,6 +46,12 @@ builder.Services.AddResponseCompression(options =>
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
 });
+builder.Services.AddHealthChecks()
+    .AddCheck<DbContextHealthCheck<IdentityDbContext>>("identity-db", tags: ["ready"])
+    .AddCheck<DbContextHealthCheck<BudgetingDbContext>>("budgeting-db", tags: ["ready"])
+    .AddCheck<DbContextHealthCheck<LedgerDbContext>>("ledger-db", tags: ["ready"])
+    .AddCheck<RedisHealthCheck>("redis", tags: ["ready"])
+    .AddCheck<S3HealthCheck>("s3", tags: ["ready"]);
 builder.Services.CritterStackDefaults(x =>
 {
     // Static needs a `codegen write` pass baked into the image or the host throws
@@ -83,7 +95,19 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.MapGet("/health", () => "Healthy!");
+// The process is up; no dependency probing. Kubernetes/Docker use this to decide whether to
+// restart the container, so it must never fail because a downstream dependency is unhealthy.
+// AllowAnonymous/DisableRateLimiting: no fallback auth policy or rate limiter exists yet, but
+// both land later this phase and a health probe must never be gated by either.
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false })
+    .AllowAnonymous()
+    .DisableRateLimiting();
+
+// Ready to take traffic: probes Postgres (all three schemas, plus pending-migration detection
+// for TECH-DEBT #16), Redis and S3/MinIO.
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") })
+    .AllowAnonymous()
+    .DisableRateLimiting();
 
 return await app.RunJasperFxCommands(args);
 

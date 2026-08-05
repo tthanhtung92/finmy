@@ -6,6 +6,7 @@ using Finmy.Identity.Infrastructure.Persistence;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -57,7 +58,9 @@ public static class DependencyInjection
         {
             throw new InvalidOperationException("Connection string 'IdentityDb' is not configured.");
         }
-        services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(
+            connectionString,
+            x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "identity")));
     }
 
     private static void AddOptions(IServiceCollection services, IConfiguration configuration)
