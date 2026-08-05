@@ -3,9 +3,12 @@ using System.Text;
 using Finmy.Identity.Infrastructure.Users;
 using Finmy.Identity.Infrastructure.Authentication;
 using Finmy.Identity.Infrastructure.Persistence;
+using Finmy.Modularity.Extensions;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -34,7 +37,14 @@ public static class DependencyInjection
 
         // Add authentication + authorization services
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-        services.AddAuthorization();
+
+        // TECH-DEBT #1: every endpoint requires an authenticated user unless it opts out with
+        // .AllowAnonymous(). The allowlist is register/login/refresh/logout, /identity/ping,
+        // the health endpoints, and the dev-only OpenAPI/Scalar routes.
+        services.AddAuthorization(options =>
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build());
 
         // AddSingleton
         services.AddSingleton(TimeProvider.System);
@@ -52,12 +62,10 @@ public static class DependencyInjection
 
     private static void AddDbContext(IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("IdentityDb");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Connection string 'IdentityDb' is not configured.");
-        }
-        services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(connectionString));
+        var connectionString = configuration.GetRequiredConnectionString("IdentityDb");
+        services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(
+            connectionString,
+            x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "identity")));
     }
 
     private static void AddOptions(IServiceCollection services, IConfiguration configuration)
@@ -98,6 +106,25 @@ public static class DependencyInjection
                 };
 
                 bearerOptions.MapInboundClaims = false;
+
+                // A browser cannot set an Authorization header on a WebSocket handshake, so
+                // SignalR passes the access token as a query string parameter instead. Only
+                // honour it on the hub path -- everywhere else a token in the URL would end up
+                // in server logs and browser history for no reason.
+                bearerOptions.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            context.HttpContext.Request.Path.StartsWithSegments("/api/v1/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         // IdentitySeedOptions

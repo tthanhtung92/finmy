@@ -14,7 +14,8 @@ public static class IdentityDemoEndpoints
     {
         var group = endpoints.MapGroup("/identity");
 
-        group.MapGet("/ping", () => "Identity pong!");
+        group.MapGet("/ping", () => "Identity pong!")
+            .AllowAnonymous();
 
         group.MapGet("/me", GetCurrentUser)
             .RequireAuthorization();

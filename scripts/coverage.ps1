@@ -21,8 +21,8 @@
 #>
 [CmdletBinding()]
 param(
-    [double] $LineThreshold = 52.0,
-    [double] $BranchThreshold = 48.0,
+    [double] $LineThreshold = 60.0,
+    [double] $BranchThreshold = 54.0,
     [switch] $SkipIntegration
 )
 

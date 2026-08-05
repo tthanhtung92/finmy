@@ -7,8 +7,10 @@ using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Receipts;
 using Finmy.Budgeting.Infrastructure.Persistence;
 using Finmy.Budgeting.Infrastructure.Storage;
+using Finmy.Modularity.Extensions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -46,7 +48,13 @@ public static class DependencyInjection
 
                 // Have the SDK compute checksums only where the operation actually requires them
                 RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
-                ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
+                ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
+
+                // Resilience: the AWS SDK's own retry pipeline, not a wrapping Polly policy --
+                // one SDK config block does not justify a separate resilience framework.
+                RetryMode = RequestRetryMode.Standard,
+                MaxErrorRetry = 3,
+                Timeout = TimeSpan.FromSeconds(10)
             };
 
             // Register the S3 client as a singleton so the connection pool is reused
@@ -72,12 +80,10 @@ public static class DependencyInjection
 
     private static void AddDbContext(IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("BudgetingDb");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Connection string 'BudgetingDb' is not configured.");
-        }
-        services.AddDbContextWithWolverineIntegration<BudgetingDbContext>(options => options.UseNpgsql(connectionString));
+        var connectionString = configuration.GetRequiredConnectionString("BudgetingDb");
+        services.AddDbContextWithWolverineIntegration<BudgetingDbContext>(options => options.UseNpgsql(
+            connectionString,
+            x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "budgeting")));
     }
 
     private static void AddOptions(IServiceCollection services, IConfiguration configuration)

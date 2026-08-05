@@ -5,6 +5,7 @@ using Finmy.Modularity.Filters;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 
 namespace Finmy.Identity.Api.Endpoints;
@@ -16,23 +17,32 @@ public static class IdentityCoreEndpoints
         var group = endpoints.MapGroup("/identity");
 
         group.MapPost("/register", RegisterAsync)
-            .AddEndpointFilter<ValidationFilter<RegisterRequest>>();
+            .AddEndpointFilter<ValidationFilter<RegisterRequest>>()
+            .AllowAnonymous()
+            .RequireRateLimiting("auth");
 
         group.MapPost("/login", LoginAsync)
-            .AddEndpointFilter<ValidationFilter<LoginRequest>>();
+            .AddEndpointFilter<ValidationFilter<LoginRequest>>()
+            .AllowAnonymous()
+            .RequireRateLimiting("auth");
 
         group.MapPost("/refresh", RefreshAsync)
-            .AddEndpointFilter<ValidationFilter<RefreshRequest>>();
+            .AddEndpointFilter<ValidationFilter<RefreshRequest>>()
+            .AllowAnonymous()
+            .RequireRateLimiting("auth");
 
+        // Anonymous on purpose: logout revokes a refresh token the caller already holds, and
+        // requiring a live access token would make logout impossible once it has expired.
         group.MapPost("/logout", LogoutAsync)
-            .AddEndpointFilter<ValidationFilter<RefreshRequest>>();
+            .AddEndpointFilter<ValidationFilter<RefreshRequest>>()
+            .AllowAnonymous();
     }
 
     private static async Task<IResult> RegisterAsync(RegisterRequest req, AuthService svc)
     {
         var result = await svc.RegisterAsync(req);
         // No Users route yet, but return the standard shape anyway
-        return result.Match(id => Results.Created($"/identity/users/{id}", new { userId = id }));
+        return result.Match(id => Results.Created($"/api/v1/identity/users/{id}", new { userId = id }));
     }
 
     private static async Task<IResult> LoginAsync(

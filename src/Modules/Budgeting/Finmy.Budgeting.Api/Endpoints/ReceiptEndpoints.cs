@@ -26,7 +26,7 @@ public static class ReceiptEndpoints
     {
         using var stream = file.OpenReadStream();
         var result = await svc.UploadAsync(stream, file.Length, file.ContentType, file.FileName, cancellationToken);
-        return result.Match(x => Results.Created($"/receipts/{x.Id}", x));
+        return result.Match(x => Results.Created($"/api/v1/receipts/{x.Id}", x));
     }
 
     private static async Task<IResult> GetReceiptAsync(

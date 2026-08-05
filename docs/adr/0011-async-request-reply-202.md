@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, 2026-07-26. Written down on 2026-08-04, after the fact.
+Accepted, 2026-07-26. Written down on 2026-08-04, after the fact. Route shape superseded in part by [ADR-0015](0015-transaction-status-splits-to-sub-resource.md), 2026-08-05: the state machine and the `202 Accepted` contract below still stand, but `GET /transactions/{id}` is no longer the status resource.
 
 ## Context
 

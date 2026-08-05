@@ -4,9 +4,12 @@ using System.Net.Http.Json;
 using Finmy.Budgeting.Domain.Envelopes;
 using Finmy.Budgeting.Infrastructure.Persistence;
 using Finmy.Contracts.Budgeting;
+using Finmy.Ledger.Application.Transactions;
+using Finmy.Ledger.Application.Transactions.Dtos;
 using Finmy.Ledger.Domain.Transactions;
 using Finmy.Ledger.Infrastructure.Persistence;
 
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,7 +20,7 @@ using Wolverine.Tracking;
 namespace Finmy.IntegrationTests.Ledger;
 
 /// <summary>
-/// Drives POST /transactions over HTTP and follows the anti-overspend loop to its end.
+/// Drives POST /api/v1/transactions over HTTP and follows the anti-overspend loop to its end.
 ///
 /// Waiting uses Wolverine's tracked session rather than Task.Delay, so a test fails because
 /// the message was not handled, not because a sleep was too short.
@@ -33,12 +36,12 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         var envelopeId = await SeedEnvelopeAsync(allocated: 1_000m);
         var spaceId = Guid.CreateVersion7();
 
-        using var client = factory.CreateClient();
+        using var client = await factory.CreateAuthenticatedClientAsync(TestContext.Current.CancellationToken);
 
         var session = await factory.Services.ExecuteAndWaitAsync(
             async () =>
             {
-                var response = await client.PostAsJsonAsync("/transactions", new
+                var response = await client.PostAsJsonAsync("/api/v1/transactions", new
                 {
                     spaceId,
                     envelopeId,
@@ -63,6 +66,61 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
 
         var transaction = await SingleTransactionForAsync(spaceId);
         transaction.State.ShouldBe(TransactionState.Confirmed);
+
+        // TECH-DEBT #2: the status now lives in Postgres, not a ConcurrentDictionary, so it
+        // survives a restart and is visible to every replica.
+        var statusRow = await LoadTransactionRequestAsync(transaction.Id);
+        statusRow.Status.ShouldBe(TransactionRequestStatus.Succeeded);
+        statusRow.ExpiresAtUtc.ShouldBeGreaterThan(statusRow.CreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task Status_redirects_to_the_transaction_once_it_succeeds()
+    {
+        var envelopeId = await SeedEnvelopeAsync(allocated: 1_000m);
+        var spaceId = Guid.CreateVersion7();
+
+        // AllowAutoRedirect: false so the 303 itself can be asserted, rather than the client
+        // silently following it.
+        using var client = await factory.CreateAuthenticatedClientAsync(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false },
+            TestContext.Current.CancellationToken);
+
+        HttpResponseMessage postResponse = null!;
+
+        await factory.Services.ExecuteAndWaitAsync(
+            async () =>
+            {
+                postResponse = await client.PostAsJsonAsync("/api/v1/transactions", new
+                {
+                    spaceId,
+                    envelopeId,
+                    amount = 40m,
+                    direction = 0,
+                    occurredOn = DateTimeOffset.UtcNow,
+                    description = "See Other"
+                }, TestContext.Current.CancellationToken);
+
+                postResponse.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+            },
+            timeoutInMilliseconds: 30_000);
+
+        var statusUrl = postResponse.Headers.Location!.ToString();
+        statusUrl.ShouldEndWith("/status");
+
+        var statusResponse = await client.GetAsync(statusUrl, TestContext.Current.CancellationToken);
+        statusResponse.StatusCode.ShouldBe(HttpStatusCode.SeeOther);
+
+        var transactionUrl = statusResponse.Headers.Location!.ToString();
+        transactionUrl.ShouldNotEndWith("/status");
+
+        var transactionResponse = await client.GetAsync(transactionUrl, TestContext.Current.CancellationToken);
+        transactionResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var transaction = await transactionResponse.Content.ReadFromJsonAsync<TransactionResponse>(TestContext.Current.CancellationToken);
+        transaction.ShouldNotBeNull();
+        transaction.State.ShouldBe((int)TransactionState.Confirmed);
+        transaction.SpaceId.ShouldBe(spaceId);
     }
 
     [Fact]
@@ -71,12 +129,12 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         var envelopeId = await SeedEnvelopeAsync(allocated: 100m);
         var spaceId = Guid.CreateVersion7();
 
-        using var client = factory.CreateClient();
+        using var client = await factory.CreateAuthenticatedClientAsync(TestContext.Current.CancellationToken);
 
         var session = await factory.Services.ExecuteAndWaitAsync(
             async () =>
             {
-                var response = await client.PostAsJsonAsync("/transactions", new
+                var response = await client.PostAsJsonAsync("/api/v1/transactions", new
                 {
                     spaceId,
                     envelopeId,
@@ -107,7 +165,7 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         var spaceId = Guid.CreateVersion7();
         var idempotencyKey = $"test-{Guid.CreateVersion7()}";
 
-        using var client = factory.CreateClient();
+        using var client = await factory.CreateAuthenticatedClientAsync(TestContext.Current.CancellationToken);
 
         var payload = new
         {
@@ -145,9 +203,27 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         envelope.Spent.ShouldBe(40m, "and it must not deduct twice either");
     }
 
+    [Fact]
+    public async Task Posting_without_a_token_is_rejected()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/v1/transactions", new
+        {
+            spaceId = Guid.CreateVersion7(),
+            envelopeId = Guid.CreateVersion7(),
+            amount = 10m,
+            direction = 0,
+            occurredOn = DateTimeOffset.UtcNow,
+            description = "No token"
+        }, TestContext.Current.CancellationToken);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+    }
+
     private static HttpRequestMessage BuildRequest(object payload, string idempotencyKey)
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/transactions")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/transactions")
         {
             Content = JsonContent.Create(payload)
         };
@@ -196,5 +272,14 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
 
         return await ledger.Transactions.AsNoTracking()
             .SingleAsync(x => x.SpaceId == spaceId, TestContext.Current.CancellationToken);
+    }
+
+    private async Task<TransactionRequestRecord> LoadTransactionRequestAsync(Guid transactionId)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var ledger = scope.ServiceProvider.GetRequiredService<LedgerDbContext>();
+
+        return await ledger.TransactionRequests.AsNoTracking()
+            .SingleAsync(x => x.TransactionId == transactionId, TestContext.Current.CancellationToken);
     }
 }

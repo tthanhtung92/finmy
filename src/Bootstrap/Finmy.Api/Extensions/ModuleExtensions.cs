@@ -25,9 +25,11 @@ public static class ModuleExtensions
 
     public static void UseModules(this IEndpointRouteBuilder endpoints)
     {
+        var v1 = endpoints.MapGroup("/api/v1");
+
         foreach (var module in Modules)
         {
-            module.MapEndpoints(endpoints);
+            module.MapEndpoints(v1);
         }
     }
 }
