@@ -54,6 +54,7 @@ A personal project under active construction, on its way to a real deployment bu
   - **Idempotency**: `Idempotency-Key` on `POST /api/v1/transactions` backed by `IIdempotencyStore`, with a request fingerprint so a reused key carrying a different payload is rejected with 422 rather than silently replayed. On the consumer side, a `ProcessedTransaction` table makes the Budgeting handler idempotent, so a redelivered message does not deduct twice.
 - **Integration events** in `Finmy.Contracts`: `TransactionPostedEvent`, `EnvelopeOverspentEvent`, `EnvelopeBalanceChangedEvent`. The full chain is described under [Transaction write path](#transaction-write-path).
 - **Operations**: `GET /health/live` and `GET /health/ready` (the latter probing Postgres, Redis and S3/MinIO), a global authenticated fallback policy, rate limiting on all endpoints with a tighter policy on login/register/refresh, and a migration strategy that survives more than one replica ([ADR-0014](docs/adr/0014-migration-strategy-for-multiple-replicas.md)).
+- **Observability**: Serilog writing structured JSON to stdout, enriched with trace and correlation ids; OpenTelemetry tracing and metrics across ASP.NET Core, HttpClient, Npgsql, Redis and Wolverine, exported over OTLP when a collector is configured; a dedicated `ActivitySource` (`Finmy.AntiOverspend`) so one transaction traces across both Ledger and Budgeting; business metrics (`finmy.transactions.recorded`, `finmy.envelopes.overspent`, `finmy.envelope.concurrency_conflicts`, `finmy.outbox.backlog`); and a self-hosted Grafana stack (Prometheus, Tempo, Loki, an OpenTelemetry Collector) with a provisioned dashboard and four alert rules ([ADR-0017](docs/adr/0017-observability-shape.md)).
 - **Tests**: unit tests for the Envelope domain (create, update, spend, fund), `EnvelopeService`, cache policy, alert policy, the receipt validator and the Transaction domain; integration tests for the concurrent-spend race, the async transaction lifecycle, rate limiting and pruning, all running against real Postgres, Redis and MinIO through Testcontainers.
 - `Result<T>`, `Error` and `ErrorType` in SharedKernel, a `GlobalExceptionHandler` returning ProblemDetails without leaking stack traces, and `ValidationFilter<T>` with FluentValidation rejecting bad input at the endpoint.
 - OpenAPI plus Scalar UI in Development.
@@ -61,7 +62,7 @@ A personal project under active construction, on its way to a real deployment bu
 - A multi-stage Dockerfile publishing a non-root, framework-dependent image, and GitHub Actions for build, test, architecture tests, coverage, CodeQL and a vulnerable-package gate, with a release workflow pushing tagged images to GHCR.
 - Sixteen ADRs plus `docs/naming-conventions.md`, and `docs/TECH-DEBT.md` listing known gaps.
 
-**Not built yet:** Space, Account, Member and per-Space authorization; CSV statement import with deduplication; Serilog and OpenTelemetry.
+**Not built yet:** Space, Account, Member and per-Space authorization; CSV statement import with deduplication; the Helm/k3s deployment.
 
 ---
 
@@ -78,7 +79,7 @@ A personal project under active construction, on its way to a real deployment bu
 | **Messaging** | Ledger | Wolverine in-process: async transaction recording plus transactional outbox | Done |
 | **Concurrency** | Ledger + Budgeting | Optimistic concurrency on `Envelope.Version`, compensating reversal on overspend | Done |
 | **Idempotency** | Ledger | `Idempotency-Key` with request fingerprint, plus a consumer dedup table | Done |
-| **Observability** | whole system | Serilog structured logging plus OpenTelemetry tracing | Planned |
+| **Observability** | whole system | Serilog structured logging, OpenTelemetry tracing and metrics, self-hosted Grafana stack | Done |
 | **Operations** | whole system | Docker multi-stage, GitHub Actions, Helm on k3s | Planned |
 
 ---
@@ -149,9 +150,11 @@ In use today:
 | Object storage | MinIO through AWSSDK.S3 |
 | API docs | OpenAPI plus Scalar (Development only) |
 | Tests | xUnit v3 on Microsoft Testing Platform, NSubstitute, Shouldly, Testcontainers |
-| Infrastructure | Docker Compose (PostgreSQL, Redis, MinIO) |
+| Logging | Serilog (console JSON, OTLP to a collector) |
+| Tracing / metrics | OpenTelemetry SDK, OTLP export |
+| Infrastructure | Docker Compose (PostgreSQL, Redis, MinIO, and an optional Prometheus/Tempo/Loki/Grafana stack) |
 
-Quality gates: .NET analyzers, SonarAnalyzer, Roslynator, NetArchTest, and code coverage through the Microsoft Testing Platform collector. Planned: Mapster, Serilog, OpenTelemetry, GitHub Actions, Helm on k3s.
+Quality gates: .NET analyzers, SonarAnalyzer, Roslynator, NetArchTest, and code coverage through the Microsoft Testing Platform collector. Planned: Mapster, Helm on k3s.
 
 > **On licensing:** the project deliberately avoids libraries that moved to commercial licenses in 2025 (MediatR, AutoMapper, MassTransit, Moq, FluentAssertions) and uses equivalent replacements. Details in [ADR-0003](docs/adr/0003-avoid-commercial-libraries.md).
 
@@ -187,6 +190,17 @@ To override any default (a real MinIO or Postgres password, for instance), copy 
 Tagged releases publish to `ghcr.io/tthanhtung92/finmy`.
 
 For pgAdmin and RedisInsight alongside Postgres and Redis, use `docker/docker-compose.local.yml` instead; it does not currently run the API (see `docs/TECH-DEBT.md`).
+
+For traces, metrics, logs and dashboards, add the observability compose file on top:
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.observability.yml up -d --build
+
+# Grafana:     http://localhost:3000
+# Prometheus:  http://localhost:9090
+```
+
+This adds Prometheus, Tempo, Loki, Grafana and an OpenTelemetry Collector, and points the API at the collector; the base compose file is untouched, so plain `docker compose up` still works with no observability stack running at all.
 
 ### Running from source
 
@@ -247,7 +261,7 @@ Space, Account and the rest arrive with the [roadmap](docs/ROADMAP.md).
 ## Testing
 
 ```bash
-dotnet test Finmy.slnx          # 102 tests; the integration suite needs Docker
+dotnet test Finmy.slnx          # 112 tests; the integration suite needs Docker
 pwsh scripts/coverage.ps1       # coverage, failing below the recorded floor
 ```
 
@@ -304,6 +318,7 @@ Significant decisions are recorded as ADRs:
 - [ADR-0014: Migration strategy for multiple replicas](docs/adr/0014-migration-strategy-for-multiple-replicas.md)
 - [ADR-0015: The transaction status resource splits to a sub-resource and answers `303 See Other`](docs/adr/0015-transaction-status-splits-to-sub-resource.md)
 - [ADR-0016: Authenticated by default, with an explicit anonymous allowlist](docs/adr/0016-authenticated-by-default-with-anonymous-allowlist.md)
+- [ADR-0017: Observability is OTLP-first, with a shared ActivitySource in SharedKernel and alerting provisioned in Grafana](docs/adr/0017-observability-shape.md)
 
 ---
 
@@ -321,7 +336,7 @@ The phase plan is in [docs/ROADMAP.md](docs/ROADMAP.md); known gaps are tracked 
 - [x] Build and quality gates: analyzers, coverage, NetArchTest, HTTP-level integration tests
 - [x] Packaging and CI/CD: Dockerfile, GitHub Actions, image publishing
 - [x] Production hardening: health checks, authorization, rate limiting, API versioning, durable status store
-- [ ] Observability: Serilog plus OpenTelemetry into a self-hosted Grafana stack
+- [x] Observability: Serilog plus OpenTelemetry into a self-hosted Grafana stack
 - [ ] Deployment: Helm on k3s, Terraform, TLS, encrypted secrets
 - [ ] Space, membership and per-Space authorization
 

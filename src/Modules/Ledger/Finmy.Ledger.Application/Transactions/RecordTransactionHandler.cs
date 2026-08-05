@@ -1,6 +1,7 @@
 ﻿using Finmy.Contracts.Ledger;
 using Finmy.Ledger.Application.Abstractions;
 using Finmy.Ledger.Domain.Transactions;
+using Finmy.SharedKernel.Observability;
 
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,11 @@ public sealed partial class RecordTransactionHandler(
 {
     public async Task<TransactionPostedEvent> HandleAsync(RecordTransactionCommand command, CancellationToken cancellationToken)
     {
+        using var activity = FinmyTelemetry.AntiOverspend.StartActivity("ledger.record_transaction");
+        activity?.SetTag("transaction.id", command.TransactionId);
+        activity?.SetTag("envelope.id", command.EnvelopeId);
+        activity?.SetTag("transaction.direction", command.Direction.ToString());
+
         var result = Transaction.Create(
             command.TransactionId,
             command.SpaceId,
@@ -34,10 +40,17 @@ public sealed partial class RecordTransactionHandler(
         {
             await statusStore.MarkFailedAsync(command.TransactionId, result.Error, cancellationToken);
             LogTransactionRejected(logger, command.TransactionId, result.Error.Code);
+            activity?.SetTag("outcome", "rejected");
+            FinmyTelemetry.TransactionsRecorded.Add(1, new KeyValuePair<string, object?>("outcome", "rejected"));
             throw new TransactionRejectedException(result.Error);
         }
 
         repository.Add(result.Value);
+
+        activity?.SetTag("outcome", "accepted");
+        FinmyTelemetry.TransactionsRecorded.Add(1,
+            new KeyValuePair<string, object?>("outcome", "accepted"),
+            new KeyValuePair<string, object?>("direction", command.Direction.ToString()));
 
         return new TransactionPostedEvent(
             result.Value.Id,

@@ -1,6 +1,7 @@
 ﻿using Finmy.Budgeting.Application.Abstractions;
 using Finmy.Budgeting.Application.Envelopes.Dtos;
 using Finmy.Budgeting.Domain.Envelopes;
+using Finmy.SharedKernel.Observability;
 using Finmy.SharedKernel.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,10 @@ public sealed class EnvelopeRepository(BudgetingDbContext dbContext) : IEnvelope
             // EF Core puts the concurrency token in the WHERE clause of every UPDATE and
             // DELETE, so this fires whenever another writer got there first. Translating it
             // here keeps EF Core out of the Application layer and turns a 500 into a 409.
+            // Note: this only covers the HTTP CRUD path. On the message path
+            // AutoApplyTransactions() saves after the handler returns, so that conflict
+            // escapes to Wolverine's own retry policy in Program.cs and never reaches here.
+            FinmyTelemetry.ConcurrencyConflicts.Add(1);
             return EnvelopeErrors.ConcurrencyConflict;
         }
     }

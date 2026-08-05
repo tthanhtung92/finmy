@@ -1,6 +1,7 @@
 using Finmy.Api.Extensions;
 using Finmy.Api.HealthChecks;
 using Finmy.Api.Middleware;
+using Finmy.Api.Observability;
 using Finmy.Budgeting.Infrastructure.Persistence;
 using Finmy.Identity.Infrastructure.Persistence;
 using Finmy.Ledger.Infrastructure.Persistence;
@@ -18,6 +19,11 @@ using Microsoft.Extensions.Caching.Hybrid;
 
 using Scalar.AspNetCore;
 
+using Serilog;
+using Serilog.Formatting.Compact;
+
+using StackExchange.Redis;
+
 using System.Threading.RateLimiting;
 
 using Wolverine;
@@ -26,15 +32,51 @@ using Wolverine.Postgresql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseSerilog((context, _, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .Enrich.With<ActivityEnricher>()
+        .WriteTo.Console(new CompactJsonFormatter());
+
+    // Console always gets JSON; the OTLP sink (Loki, by way of the collector) is opt-in so a
+    // bare `dotnet run` with no collector up does not spend every flush interval failing to
+    // connect. Same gate as the trace/metric exporters below.
+    var otlpEndpoint = context.Configuration["OpenTelemetry:OtlpEndpoint"];
+    if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+    {
+        configuration.WriteTo.OpenTelemetry(options =>
+        {
+            options.Endpoint = otlpEndpoint;
+            // Without this, Loki's OTLP ingest labels every log line service_name
+            // "unknown_service:dotnet" instead of matching the traces/metrics resource name,
+            // which breaks the "one service" story in Grafana Explore.
+            options.ResourceAttributes.Add("service.name", "finmy-api");
+        });
+    }
+});
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddModules(builder.Configuration);
 
 builder.Services.AddOpenApi();
+
+// One multiplexer, shared by HybridCache's L2 and by the Redis trace instrumentation below,
+// rather than the two connecting independently. AbortOnConnectFail = false matches today's
+// tolerance of a Redis outage at startup: RedisHealthCheck is what actually reports it down.
+var redisOptions = ConfigurationOptions.Parse(builder.Configuration.GetRequiredConnectionString("Redis"));
+redisOptions.AbortOnConnectFail = false;
+var redisMultiplexer = await ConnectionMultiplexer.ConnectAsync(redisOptions);
+builder.Services.AddSingleton<IConnectionMultiplexer>(redisMultiplexer);
+
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration.GetRequiredConnectionString("Redis");
+    options.ConnectionMultiplexerFactory = () => Task.FromResult<IConnectionMultiplexer>(redisMultiplexer);
 });
+builder.AddObservability(redisMultiplexer);
+builder.Services.AddHostedService<OutboxBacklogMetrics>();
 builder.Services.AddHybridCache(options =>
 {
     options.DefaultEntryOptions = new HybridCacheEntryOptions
@@ -119,6 +161,8 @@ builder.Host.UseWolverine(opts =>
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging();
 app.UseResponseCompression();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -149,7 +193,16 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check 
     .AllowAnonymous()
     .DisableRateLimiting();
 
-return await app.RunJasperFxCommands(args);
+try
+{
+    return await app.RunJasperFxCommands(args);
+}
+finally
+{
+    // The host does not end in app.Run(), so nothing else flushes the console/OTLP sinks
+    // before the process exits.
+    await Log.CloseAndFlushAsync();
+}
 
 /// <summary>
 /// Top-level statements generate an internal Program, which WebApplicationFactory&lt;T&gt; cannot

@@ -1,0 +1,145 @@
+# Grafana unified alerting, provisioned as code. No Alertmanager container and no
+# contact-points.yaml: a self-hosted single-user deploy has nowhere to route notifications yet,
+# so every rule here relies on Grafana's own built-in default notification policy. Phase 5 is
+# where a real contact point (email, webhook) becomes worth adding.
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: finmy-alerts
+    folder: Finmy
+    interval: 1m
+    rules:
+      - uid: finmy-error-rate
+        title: "Finmy: 5xx error rate above 5%"
+        condition: C
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "5xx responses exceeded 5% of total requests for 5 minutes."
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+                / sum(rate(http_server_request_duration_seconds_count[5m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+
+      - uid: finmy-p95-latency
+        title: "Finmy: p95 latency above 1s"
+        condition: C
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 request latency exceeded 1 second for 10 minutes."
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+
+      - uid: finmy-outbox-backlog
+        title: "Finmy: outbox backlog above 100"
+        condition: C
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Wolverine's transactional outbox has queued more than 100 rows for 10 minutes."
+        data:
+          - refId: A
+            relativeTimeRange: { from: 60, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: finmy_outbox_backlog
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [100] }
+
+      - uid: finmy-concurrency-conflicts
+        title: "Finmy: envelope concurrency conflicts elevated"
+        condition: C
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: >-
+            Optimistic concurrency conflicts on the envelope balance (HTTP CRUD path only;
+            see the Concurrency conflicts panel on the Finmy overview dashboard for the
+            message-path caveat) are elevated for 10 minutes.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: rate(finmy_envelope_concurrency_conflicts_total[5m])
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0.1] }

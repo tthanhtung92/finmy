@@ -1,0 +1,93 @@
+{
+  "title": "Finmy overview",
+  "uid": "finmy-overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_request_duration_seconds_count[5m]))",
+          "legendFormat": "requests/s"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "5xx error ratio",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~\"5..\"}[5m])) / sum(rate(http_server_request_duration_seconds_count[5m]))",
+          "legendFormat": "5xx ratio"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "p95 latency",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Outbox backlog",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Rows in wolverine.wolverine_outgoing_envelopes, polled every 15s.",
+      "targets": [
+        {
+          "expr": "finmy_outbox_backlog",
+          "legendFormat": "backlog"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Concurrency conflicts",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "finmy.envelope.concurrency_conflicts only covers the HTTP CRUD path (EnvelopeRepository.SaveChangesAsync). On the message path, AutoApplyTransactions() saves after the handler returns, so that conflict is retried by Wolverine's own host-level policy and never reaches this counter — see Program.cs and TECH-DEBT.md.",
+      "targets": [
+        {
+          "expr": "rate(finmy_envelope_concurrency_conflicts_total[5m])",
+          "legendFormat": "conflicts/s (HTTP path only)"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Overspend rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "rate(finmy_envelopes_overspent_total[5m])",
+          "legendFormat": "overspent/s"
+        }
+      ]
+    }
+  ]
+}
