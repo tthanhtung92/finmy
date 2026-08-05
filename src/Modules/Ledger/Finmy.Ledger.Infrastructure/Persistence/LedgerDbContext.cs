@@ -8,6 +8,7 @@ public sealed class LedgerDbContext(DbContextOptions<LedgerDbContext> options) :
 {
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<IdempotencyRecord> IdempotencyRecords { get; set; }
+    public DbSet<TransactionRequestRecord> TransactionRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,5 +33,17 @@ public sealed class LedgerDbContext(DbContextOptions<LedgerDbContext> options) :
         modelBuilder.Entity<IdempotencyRecord>().Property(x => x.RequestHash).HasMaxLength(64);
 
         #endregion IdempotencyRecord
+
+        #region TransactionRequestRecord
+
+        modelBuilder.Entity<TransactionRequestRecord>().HasKey(x => x.TransactionId);
+
+        modelBuilder.Entity<TransactionRequestRecord>().Property(x => x.ErrorCode).HasMaxLength(255);
+        modelBuilder.Entity<TransactionRequestRecord>().Property(x => x.ErrorDescription).HasMaxLength(1000);
+
+        // The pruning background service (commit 9) sweeps on this column.
+        modelBuilder.Entity<TransactionRequestRecord>().HasIndex(x => x.ExpiresAtUtc);
+
+        #endregion TransactionRequestRecord
     }
 }

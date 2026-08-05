@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using Finmy.Budgeting.Domain.Envelopes;
 using Finmy.Budgeting.Infrastructure.Persistence;
 using Finmy.Contracts.Budgeting;
+using Finmy.Ledger.Application.Transactions;
 using Finmy.Ledger.Domain.Transactions;
 using Finmy.Ledger.Infrastructure.Persistence;
 
@@ -63,6 +64,12 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
 
         var transaction = await SingleTransactionForAsync(spaceId);
         transaction.State.ShouldBe(TransactionState.Confirmed);
+
+        // TECH-DEBT #2: the status now lives in Postgres, not a ConcurrentDictionary, so it
+        // survives a restart and is visible to every replica.
+        var statusRow = await LoadTransactionRequestAsync(transaction.Id);
+        statusRow.Status.ShouldBe(TransactionRequestStatus.Succeeded);
+        statusRow.ExpiresAtUtc.ShouldBeGreaterThan(statusRow.CreatedAtUtc);
     }
 
     [Fact]
@@ -214,5 +221,14 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
 
         return await ledger.Transactions.AsNoTracking()
             .SingleAsync(x => x.SpaceId == spaceId, TestContext.Current.CancellationToken);
+    }
+
+    private async Task<TransactionRequestRecord> LoadTransactionRequestAsync(Guid transactionId)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var ledger = scope.ServiceProvider.GetRequiredService<LedgerDbContext>();
+
+        return await ledger.TransactionRequests.AsNoTracking()
+            .SingleAsync(x => x.TransactionId == transactionId, TestContext.Current.CancellationToken);
     }
 }

@@ -19,13 +19,17 @@ public static class DependencyInjection
         // Configure DbContext
         AddDbContext(services, configuration);
 
+        // Configure Options
+        services.AddOptions<TransactionStatusOptions>()
+            .Bind(configuration.GetSection(TransactionStatusOptions.SectionName));
+
         // AddSingleton
-        services.AddSingleton<ITransactionRequestStatusStore, InMemoryTransactionStatusStore>();
         services.TryAddSingleton(TimeProvider.System);
 
         // AddScoped
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IIdempotencyStore, IdempotencyStore>();
+        services.AddScoped<ITransactionRequestStatusStore, PostgresTransactionStatusStore>();
 
         return services;
     }
