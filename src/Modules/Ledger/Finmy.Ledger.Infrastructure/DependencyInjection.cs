@@ -31,6 +31,12 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyStore, IdempotencyStore>();
         services.AddScoped<ITransactionRequestStatusStore, PostgresTransactionStatusStore>();
 
+        // Configure Hosted Service
+        // Registered as itself too, not just as IHostedService, so a test can resolve the
+        // service directly and run PruneExpiredAsync() once instead of waiting out the timer.
+        services.AddSingleton<TransactionRequestPruningService>();
+        services.AddHostedService(sp => sp.GetRequiredService<TransactionRequestPruningService>());
+
         return services;
     }
 
