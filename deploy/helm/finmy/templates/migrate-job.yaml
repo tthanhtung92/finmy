@@ -1,0 +1,39 @@
+# A plain Job, not a Helm hook. A `pre-install` hook would block the whole
+# release before Postgres exists (the StatefulSet below hasn't been created
+# yet), and a `post-install` hook under `--wait` never runs because Helm is
+# already waiting on the Deployment's rollout, which can't go Ready until this
+# Job finishes. Applying everything together works because the API's
+# readinessProbe (/health/ready, which checks GetPendingMigrationsAsync) is
+# what actually gates traffic — see ADR-0014 for why that gate, not the
+# ordering, carries the safety. The name is per-revision because Jobs are
+# otherwise immutable on `helm upgrade` with a new image tag.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: finmy-migrate-{{ .Release.Revision }}
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        # Runs the same EF loop as Dockerfile's `migrator` stage entrypoint,
+        # one `dotnet ef database update` per module schema.
+        - name: ef-migrate
+          image: "{{ .Values.image.migratorRepository }}:{{ .Values.image.tag }}"
+          envFrom:
+            - secretRef:
+                name: finmy-secrets
+      containers:
+        # `resources setup` builds the full host (Program.cs:198's
+        # RunJasperFxCommands arg-passthrough), so it needs every fail-fast
+        # config value even though it only touches the `wolverine` schema.
+        - name: wolverine-resources-setup
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          args: ["resources", "setup"]
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+          envFrom:
+            - secretRef:
+                name: finmy-secrets

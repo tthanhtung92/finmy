@@ -1,0 +1,6 @@
+apiVersion: v2
+name: finmy
+description: Finmy shared-budgeting backend — API, its in-cluster Postgres/Redis/MinIO, and a pg_dump backup CronJob
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

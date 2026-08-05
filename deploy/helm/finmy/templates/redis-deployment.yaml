@@ -1,0 +1,44 @@
+# Deployment, not StatefulSet: Redis is HybridCache's L2 layer only (see
+# CLAUDE.md), so losing its data on a restart is a cold cache, not data loss.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finmy-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finmy-redis
+  template:
+    metadata:
+      labels:
+        app: finmy-redis
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image | quote }}
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.redis.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: finmy-redis
+spec:
+  selector:
+    app: finmy-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
