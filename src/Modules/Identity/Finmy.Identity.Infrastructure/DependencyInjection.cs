@@ -3,6 +3,7 @@ using System.Text;
 using Finmy.Identity.Infrastructure.Users;
 using Finmy.Identity.Infrastructure.Authentication;
 using Finmy.Identity.Infrastructure.Persistence;
+using Finmy.Modularity.Extensions;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -61,11 +62,7 @@ public static class DependencyInjection
 
     private static void AddDbContext(IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("IdentityDb");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Connection string 'IdentityDb' is not configured.");
-        }
+        var connectionString = configuration.GetRequiredConnectionString("IdentityDb");
         services.AddDbContext<IdentityDbContext>(options => options.UseNpgsql(
             connectionString,
             x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "identity")));

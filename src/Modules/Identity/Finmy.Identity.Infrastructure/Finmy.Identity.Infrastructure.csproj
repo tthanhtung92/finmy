@@ -6,6 +6,7 @@
 
   <ItemGroup Label="Project References">
     <ProjectReference Include="..\Finmy.Identity.Application\Finmy.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\Finmy.Modularity\Finmy.Modularity.csproj" />
   </ItemGroup>
 
   <ItemGroup Label="Entity Framework Core &amp; Database">

@@ -1,5 +1,6 @@
 ﻿using Finmy.Ledger.Application.Abstractions;
 using Finmy.Ledger.Infrastructure.Persistence;
+using Finmy.Modularity.Extensions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -31,11 +32,7 @@ public static class DependencyInjection
 
     private static void AddDbContext(IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("LedgerDb");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Connection string 'LedgerDb' is not configured.");
-        }
+        var connectionString = configuration.GetRequiredConnectionString("LedgerDb");
         services.AddDbContextWithWolverineIntegration<LedgerDbContext>(options => options.UseNpgsql(
             connectionString,
             x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "ledger")));

@@ -4,6 +4,7 @@ using Finmy.Api.Middleware;
 using Finmy.Budgeting.Infrastructure.Persistence;
 using Finmy.Identity.Infrastructure.Persistence;
 using Finmy.Ledger.Infrastructure.Persistence;
+using Finmy.Modularity.Extensions;
 
 using JasperFx;
 using JasperFx.CodeGeneration;
@@ -32,7 +33,7 @@ builder.Services.AddModules(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.Configuration = builder.Configuration.GetRequiredConnectionString("Redis");
 });
 builder.Services.AddHybridCache(options =>
 {
@@ -101,8 +102,8 @@ builder.Services.CritterStackDefaults(x =>
 
 builder.Host.UseWolverine(opts =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("LedgerDb");
-    opts.PersistMessagesWithPostgresql(connectionString!, "wolverine");
+    var connectionString = builder.Configuration.GetRequiredConnectionString("LedgerDb");
+    opts.PersistMessagesWithPostgresql(connectionString, "wolverine");
     opts.Policies.AutoApplyTransactions();
     opts.Policies.UseDurableLocalQueues();
 

@@ -7,6 +7,7 @@ using Finmy.Budgeting.Application.Envelopes;
 using Finmy.Budgeting.Application.Receipts;
 using Finmy.Budgeting.Infrastructure.Persistence;
 using Finmy.Budgeting.Infrastructure.Storage;
+using Finmy.Modularity.Extensions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -73,11 +74,7 @@ public static class DependencyInjection
 
     private static void AddDbContext(IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("BudgetingDb");
-        if (string.IsNullOrWhiteSpace(connectionString))
-        {
-            throw new InvalidOperationException("Connection string 'BudgetingDb' is not configured.");
-        }
+        var connectionString = configuration.GetRequiredConnectionString("BudgetingDb");
         services.AddDbContextWithWolverineIntegration<BudgetingDbContext>(options => options.UseNpgsql(
             connectionString,
             x => x.MigrationsHistoryTable(HistoryRepository.DefaultTableName, "budgeting")));
