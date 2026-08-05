@@ -59,9 +59,14 @@ public sealed class FinmyApiFactory : WebApplicationFactory<Program>, IAsyncLife
     /// after the first call and reused, guarded by a semaphore since xUnit can run test methods
     /// in the same class in parallel.
     /// </summary>
-    public async Task<HttpClient> CreateAuthenticatedClientAsync(CancellationToken cancellationToken = default)
+    public Task<HttpClient> CreateAuthenticatedClientAsync(CancellationToken cancellationToken = default) =>
+        CreateAuthenticatedClientAsync(new WebApplicationFactoryClientOptions(), cancellationToken);
+
+    public async Task<HttpClient> CreateAuthenticatedClientAsync(
+        WebApplicationFactoryClientOptions options,
+        CancellationToken cancellationToken = default)
     {
-        var client = CreateClient();
+        var client = CreateClient(options);
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", await GetAccessTokenAsync(cancellationToken));
 

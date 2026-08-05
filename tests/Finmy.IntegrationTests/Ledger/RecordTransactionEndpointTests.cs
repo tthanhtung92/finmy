@@ -5,9 +5,11 @@ using Finmy.Budgeting.Domain.Envelopes;
 using Finmy.Budgeting.Infrastructure.Persistence;
 using Finmy.Contracts.Budgeting;
 using Finmy.Ledger.Application.Transactions;
+using Finmy.Ledger.Application.Transactions.Dtos;
 using Finmy.Ledger.Domain.Transactions;
 using Finmy.Ledger.Infrastructure.Persistence;
 
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -70,6 +72,55 @@ public class RecordTransactionEndpointTests(FinmyApiFactory factory)
         var statusRow = await LoadTransactionRequestAsync(transaction.Id);
         statusRow.Status.ShouldBe(TransactionRequestStatus.Succeeded);
         statusRow.ExpiresAtUtc.ShouldBeGreaterThan(statusRow.CreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task Status_redirects_to_the_transaction_once_it_succeeds()
+    {
+        var envelopeId = await SeedEnvelopeAsync(allocated: 1_000m);
+        var spaceId = Guid.CreateVersion7();
+
+        // AllowAutoRedirect: false so the 303 itself can be asserted, rather than the client
+        // silently following it.
+        using var client = await factory.CreateAuthenticatedClientAsync(
+            new WebApplicationFactoryClientOptions { AllowAutoRedirect = false },
+            TestContext.Current.CancellationToken);
+
+        HttpResponseMessage postResponse = null!;
+
+        await factory.Services.ExecuteAndWaitAsync(
+            async () =>
+            {
+                postResponse = await client.PostAsJsonAsync("/api/v1/transactions", new
+                {
+                    spaceId,
+                    envelopeId,
+                    amount = 40m,
+                    direction = 0,
+                    occurredOn = DateTimeOffset.UtcNow,
+                    description = "See Other"
+                }, TestContext.Current.CancellationToken);
+
+                postResponse.StatusCode.ShouldBe(HttpStatusCode.Accepted);
+            },
+            timeoutInMilliseconds: 30_000);
+
+        var statusUrl = postResponse.Headers.Location!.ToString();
+        statusUrl.ShouldEndWith("/status");
+
+        var statusResponse = await client.GetAsync(statusUrl, TestContext.Current.CancellationToken);
+        statusResponse.StatusCode.ShouldBe(HttpStatusCode.SeeOther);
+
+        var transactionUrl = statusResponse.Headers.Location!.ToString();
+        transactionUrl.ShouldNotEndWith("/status");
+
+        var transactionResponse = await client.GetAsync(transactionUrl, TestContext.Current.CancellationToken);
+        transactionResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var transaction = await transactionResponse.Content.ReadFromJsonAsync<TransactionResponse>(TestContext.Current.CancellationToken);
+        transaction.ShouldNotBeNull();
+        transaction.State.ShouldBe((int)TransactionState.Confirmed);
+        transaction.SpaceId.ShouldBe(spaceId);
     }
 
     [Fact]

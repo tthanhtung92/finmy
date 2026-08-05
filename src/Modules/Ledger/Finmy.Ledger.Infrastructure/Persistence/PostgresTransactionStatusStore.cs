@@ -68,7 +68,7 @@ public sealed class PostgresTransactionStatusStore(
             ? null
             : new Error(record.ErrorCode, record.ErrorDescription ?? string.Empty, record.ErrorType ?? ErrorType.Failure);
 
-        return new TransactionRequestSnapshot(record.TransactionId, record.Status, record.CreatedAtUtc, record.LastUpdatedAtUtc, error);
+        return new TransactionRequestSnapshot(record.TransactionId, record.Status, record.CreatedAtUtc, record.LastUpdatedAtUtc, record.ExpiresAtUtc, error);
     }
 
     private async Task UpdateAsync(Guid transactionId, TransactionRequestStatus status, Error? error, CancellationToken cancellationToken)
