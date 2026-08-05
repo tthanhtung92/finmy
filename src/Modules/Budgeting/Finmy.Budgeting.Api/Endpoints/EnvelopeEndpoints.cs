@@ -45,7 +45,7 @@ public static class EnvelopeEndpoints
         CancellationToken cancellationToken)
     {
         var result = await svc.CreateAsync(req, cancellationToken);
-        return result.Match(id => Results.Created($"/envelopes/{id}", new { id }));
+        return result.Match(id => Results.Created($"/api/v1/envelopes/{id}", new { id }));
     }
 
     private static async Task<IResult> DeleteEnvelopeAsync(

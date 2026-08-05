@@ -32,7 +32,7 @@ public static class IdentityCoreEndpoints
     {
         var result = await svc.RegisterAsync(req);
         // No Users route yet, but return the standard shape anyway
-        return result.Match(id => Results.Created($"/identity/users/{id}", new { userId = id }));
+        return result.Match(id => Results.Created($"/api/v1/identity/users/{id}", new { userId = id }));
     }
 
     private static async Task<IResult> LoginAsync(
