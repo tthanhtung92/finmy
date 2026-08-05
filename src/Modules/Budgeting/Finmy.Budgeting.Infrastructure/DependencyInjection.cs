@@ -48,7 +48,13 @@ public static class DependencyInjection
 
                 // Have the SDK compute checksums only where the operation actually requires them
                 RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
-                ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED
+                ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
+
+                // Resilience: the AWS SDK's own retry pipeline, not a wrapping Polly policy --
+                // one SDK config block does not justify a separate resilience framework.
+                RetryMode = RequestRetryMode.Standard,
+                MaxErrorRetry = 3,
+                Timeout = TimeSpan.FromSeconds(10)
             };
 
             // Register the S3 client as a singleton so the connection pool is reused
