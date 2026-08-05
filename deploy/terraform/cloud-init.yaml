@@ -1,0 +1,41 @@
+#cloud-config
+# Rendered by main.tf's templatefile(). Installs k3s with its bundled
+# Traefik, local-path-provisioner and metrics-server left enabled — not
+# disabling them is what removes three separate install steps (see
+# deploy/README.md and ADR-0018). cert-manager and the ClusterIssuer are
+# dropped as manifests k3s auto-applies (and retries) on its own, so no
+# `kubectl` invocation or wait loop is needed from here.
+write_files:
+  - path: /var/lib/rancher/k3s/server/manifests/cert-manager.yaml
+    content: |
+      apiVersion: helm.cattle.io/v1
+      kind: HelmChart
+      metadata:
+        name: cert-manager
+        namespace: kube-system
+      spec:
+        repo: https://charts.jetstack.io
+        chart: cert-manager
+        targetNamespace: cert-manager
+        createNamespace: true
+        valuesContent: |-
+          installCRDs: true
+  - path: /var/lib/rancher/k3s/server/manifests/cluster-issuer.yaml
+    content: |
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: letsencrypt-prod
+      spec:
+        acme:
+          server: https://acme-v02.api.letsencrypt.org/directory
+          email: ${acme_email}
+          privateKeySecretRef:
+            name: letsencrypt-prod-key
+          solvers:
+            - http01:
+                ingress:
+                  ingressClassName: traefik
+
+runcmd:
+  - curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=${k3s_version} sh -s - --write-kubeconfig-mode 644 --tls-san ${fqdn}
