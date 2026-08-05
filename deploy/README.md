@@ -1,9 +1,14 @@
 # Deploy: Helm chart, Terraform, and encrypted secrets
 
+First real deployment? Start with [RUNBOOK.md](RUNBOOK.md); it's the ordered
+checklist. The rest of this file and `terraform/README.md` are reference for
+each piece.
+
 ## Layout
 
 ```text
 deploy/
+├── RUNBOOK.md               # the ordered checklist for the first real deployment
 ├── helm/finmy/              # the chart: API + in-cluster Postgres/Redis/MinIO + backup CronJob
 ├── values-prod.sops.yaml    # SOPS-encrypted secrets, committed
 └── terraform/                # Hetzner VPS + firewall + DNS, written but never applied (see its own README)
