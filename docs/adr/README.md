@@ -14,7 +14,8 @@ This directory is Finmy's record of why. Each ADR captures one architectural dec
 | [0008](0008-cdn-in-front-of-object-storage.md) | Serve receipt images with presigned URLs, with a CDN in front of the object-storage origin | Accepted | 2026-07-23 |
 | [0009](0009-self-managed-version-concurrency-token.md) | Use an int `Version` column incremented by the domain as the concurrency token, not `xmin` | Accepted | 2026-07-29 |
 | [0010](0010-single-writer-envelope-balance.md) | Budgeting owns the envelope balance; overspend protection is eventually consistent with a compensating reversal | Accepted | 2026-07-25 |
-| [0011](0011-async-request-reply-202.md) | Recording a transaction is an async `202 Accepted` with a status resource | Accepted | 2026-07-26 |
+| [0011](0011-async-request-reply-202.md) | Recording a transaction is an async `202 Accepted` with a status resource | Accepted (route shape superseded in part by 0015) | 2026-07-26 |
 | [0012](0012-defer-microservice-split.md) | Stay a modular monolith through the production phases; extract Identity first if a split becomes necessary | Accepted | 2026-08-04 |
 | [0013](0013-wolverine-auto-codegen-in-production.md) | Run production Wolverine handlers with `TypeLoadMode.Auto`, not `Static` | Accepted | 2026-08-04 |
 | [0014](0014-migration-strategy-for-multiple-replicas.md) | Migrations stay a pre-deploy job serialized by EF Core's own lock, defended by a readiness gate | Accepted | 2026-08-05 |
+| [0015](0015-transaction-status-splits-to-sub-resource.md) | The transaction status resource splits to a sub-resource and answers `303 See Other` | Accepted | 2026-08-05 |
