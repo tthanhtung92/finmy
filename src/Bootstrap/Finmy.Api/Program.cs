@@ -140,6 +140,13 @@ builder.Services.CritterStackDefaults(x =>
     // Auto loads pre-built types when present and falls back to generating them.
     x.Production.GeneratedCodeMode = TypeLoadMode.Auto;
     x.Development.GeneratedCodeMode = TypeLoadMode.Dynamic;
+
+    // TECH-DEBT #4: production creates the `wolverine` schema through an explicit
+    // `resources setup` deploy step (deploy/helm/finmy/templates/migrate-job.yaml,
+    // and the compose `wolverine-setup` service), not by racing replicas at
+    // startup. Development keeps the CreateOrUpdate default so a bare `dotnet run`
+    // and the integration test host still stand up their own schema.
+    x.Production.ResourceAutoCreate = AutoCreate.None;
 });
 
 builder.Host.UseWolverine(opts =>

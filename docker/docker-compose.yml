@@ -78,6 +78,37 @@ services:
         condition: service_healthy
     restart: "no"
 
+  # One-shot: `ASPNETCORE_ENVIRONMENT=Production` makes the host skip
+  # auto-creating the `wolverine` schema (TECH-DEBT #4), so something has to
+  # run `resources setup` before `api` starts. Same image as `api`, just a
+  # different entrypoint argument; runs after `migrate` so the schemas EF owns
+  # exist first.
+  wolverine-setup:
+    build:
+      context: ..
+      target: final
+    command: ["resources", "setup"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__IdentityDb: *db-connection
+      ConnectionStrings__BudgetingDb: *db-connection
+      ConnectionStrings__LedgerDb: *db-connection
+      ConnectionStrings__Redis: redis:6379
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-finmy-local-development-signing-key-32-bytes}
+      Storage__Endpoint: http://minio:9000
+      Storage__Bucket: receipts
+      Storage__AccessKey: ${MINIO_ROOT_USER:-finmy}
+      Storage__SecretKey: ${MINIO_ROOT_PASSWORD:-finmy-minio-secret}
+      IdentitySeed__IsSeedAdmin: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: "no"
+
   api:
     build:
       context: ..
@@ -98,7 +129,7 @@ services:
       Storage__SecretKey: ${MINIO_ROOT_PASSWORD:-finmy-minio-secret}
       IdentitySeed__IsSeedAdmin: "false"
     depends_on:
-      migrate:
+      wolverine-setup:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
