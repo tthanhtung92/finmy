@@ -251,6 +251,7 @@ finmy/
 │   └── Finmy.IntegrationTests/     # real Postgres through Testcontainers
 ├── bench/                          # k6 script for the cache benchmark
 ├── docker/                         # compose files
+├── deploy/                         # Helm chart, Terraform, SOPS-encrypted secrets
 └── docs/                           # ROADMAP, TECH-DEBT, naming conventions, ADRs
 ```
 
@@ -319,6 +320,7 @@ Significant decisions are recorded as ADRs:
 - [ADR-0015: The transaction status resource splits to a sub-resource and answers `303 See Other`](docs/adr/0015-transaction-status-splits-to-sub-resource.md)
 - [ADR-0016: Authenticated by default, with an explicit anonymous allowlist](docs/adr/0016-authenticated-by-default-with-anonymous-allowlist.md)
 - [ADR-0017: Observability is OTLP-first, with a shared ActivitySource in SharedKernel and alerting provisioned in Grafana](docs/adr/0017-observability-shape.md)
+- [ADR-0018: Self-hosted deployment shape: in-cluster data tier, SOPS-encrypted secrets, Helm-on-tag CD](docs/adr/0018-self-hosted-deployment-shape.md)
 
 ---
 

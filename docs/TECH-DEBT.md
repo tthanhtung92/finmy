@@ -4,12 +4,6 @@ Debt taken on deliberately while building Finmy, with the reason each item was d
 
 The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 
-## Blocks production
-
-| # | Debt | Phase |
-|---|---|---|
-| 4 | **`AutoBuildMessageStorageOnStartup` left at its default**, so Wolverine creates its tables at startup. Production should use `AutoCreate.None` and run `resources setup` as an explicit deploy step. | 5 |
-
 ## Correctness and operations
 
 | # | Debt | Phase |
@@ -37,8 +31,7 @@ The Phase column points at the roadmap in [ROADMAP.md](ROADMAP.md).
 
 | # | Debt | Phase |
 |---|---|---|
-| 15 | **`docker/docker-compose.yml` ships a development-only `Jwt__SigningKey` default in a tracked file**, so `docker compose up` works with no `.env` at all. Fine for a laptop; a real deployment needs a real secret supplied through the environment, which is Phase 5's Sealed Secrets or SOPS work, not this file. | 5 |
-| 17 | **`docker/docker-compose.local.yml` is a standalone duplicate of `docker-compose.yml`, not an override layer**, so it drifted out of sync the moment `api` and `migrate` were added to the base file. It also maps pgadmin to host port 8080, which `api` now uses, so the two compose files cannot run together as they stand. | |
+| 17 | **`docker/docker-compose.local.yml` is a standalone duplicate of `docker-compose.yml`, not an override layer**, so it drifted out of sync the moment `api` and `migrate` were added to the base file, and drifted further when Phase 5 added `wolverine-setup`. It also maps pgadmin to host port 8080, which `api` now uses, so the two compose files cannot run together as they stand. | |
 | 18 | **The production image ships Roslyn.** `TypeLoadMode.Auto` ([ADR-0013](adr/0013-wolverine-auto-codegen-in-production.md)) generates handler wrappers at runtime when no pre-built types are on disk, so `WolverineFx.RuntimeCompilation` has to be in the image. Baking `codegen write` output in at build time would drop it, at the cost of a two-pass build; worth it only if image size or cold start become measured problems. | 5 |
 
 ## Notes worth keeping, not debt
